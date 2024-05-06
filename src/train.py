@@ -321,7 +321,9 @@ def train(config: Dict):
                 #Adicionar uma flag do wandb para acompanhar a loss// adaptar o summary writer do tensor board
 
         warmUpScheduler.step()
-
+        ##################################################
+        #Rodar teste aqui em determinado numero de epocas#
+        ##################################################
         #save ckpt and evaluate on test dataset
         #if e % 300 == 0 or e == 1000:
         if e % 400 == 0:
