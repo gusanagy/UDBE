@@ -4,7 +4,7 @@ import torch
 from torch.nn import functional
 import torch.nn as nn
 
-
+#https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement/tree/main/loss
 class lab_Loss(nn.Module):
     def __init__(self, alpha=1,weight=1,levels=7,vmin=-80,vmax=80):
         super(lab_Loss, self).__init__()
@@ -35,12 +35,12 @@ class lab_Loss(nn.Module):
 
 
     def forward(self,img,gt):
-	    tab=quantAB(self.levels,self.vmin,self.vmax).cuda()
-	    lab_img=torch.clamp(rgb2lab(img),self.vmin,self.vmax)
-	    lab_gt=torch.clamp(rgb2lab(gt),self.vmin,self.vmax)
+        tab=quantAB(self.levels,self.vmin,self.vmax).cuda()
+        lab_img=torch.clamp(rgb2lab(img),self.vmin,self.vmax)
+        lab_gt=torch.clamp(rgb2lab(gt),self.vmin,self.vmax)
 
-	    loss_l=torch.abs(lab_img[:,0,:,:]-lab_gt[:,0,:,:]).mean()
-	    loss_AB=self.loss_ab(lab_img[:,1:,:,:],lab_gt[:,1:,:,:],self.alpha,tab,self.levels)
-	    loss=loss_l+self.weight*loss_AB
-	    #return (loss,loss_l,loss_AB)
-	    return loss
+        loss_l=torch.abs(lab_img[:,0,:,:]-lab_gt[:,0,:,:]).mean()
+        loss_AB=self.loss_ab(lab_img[:,1:,:,:],lab_gt[:,1:,:,:],self.alpha,tab,self.levels)
+        loss=loss_l+self.weight*loss_AB
+        #return (loss,loss_l,loss_AB)
+        return loss

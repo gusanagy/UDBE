@@ -56,7 +56,7 @@ if __name__== "__main__" :
     
     print(config)
 
-    train(config)
+    train(config)#importar a funcao ou classe de papeline de treinamento== treino/teste e carregar as configs e rodar
 
     wandb.finish()
 
