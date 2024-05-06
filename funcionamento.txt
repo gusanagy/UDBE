@@ -1,0 +1,30 @@
+Train ->    carrega os dados :data_low, data_high,data_color,data_blur,self.input_data_low[idx] 
+            passa para a rede:  data_high, data_low,data_concate,e
+            funcoes de perda: loss, mse_loss, col_loss,exp_loss,ssim_loss,vgg_loss
+
+test ->     carrega os dados :data_low, data_high,data_color,data_blur,self.input_data_low[idx] 
+            passa para a rede: lowlight_image, data_concate,brightness_level,
+            metricas: "Average PSNR" "Average SSIM" "PSNR" "SSIM"
+
+train mask ->carrega os dados :data_low, data_high,data_color,data_blur,self.input_data_low[idx] 
+            passa para a rede: data_high, data_low,data_concate,e,brighness_leve_high
+            funcoes de perda:loss, mse_loss, col_loss,exp_loss,ssim_loss,vgg_loss
+            
+test mask ->carrega os dados :data_low, data_color,data_blur,mask
+            passa para a rede: lowlight_image, data_concate,brightness_level,
+            metricas: "Inference CLE_mask_DIF"
+
+Ideias para melhorar o funcionamento da rede e limpar o codigo:
+apenas um script main que chama todos os necessarios para o treinamento
+A min le os super parametros e carrega os parametros segundarios
+Transformar a funcao train e test em classes ou funcoes separadas do script principal
+Criar a funcao de inferencia
+Integrar o test ao treinamento fazendo o test de tempos em tempos no treinamento com o dataset de validacao
+Gerar a inferencia 
+Separar em pastas subsequentes
+Criar novo repo para os dados deste trabalho(Feito)
+Copiar todo o codigo para um novo repsositorio de forma que fique claro que este trabalho e novo
+Adicionar estes dados os glown diffusion repsositorio
+Separar funcoes avulsas e apagar funcoes inuteis
+Colocar novas loss na pasta loss
+Colocar novas metricas na pasta metrics
