@@ -1,0 +1,72 @@
+import wandb
+import argparse
+
+#import packages
+
+#initialize classes
+if __name__== "__main__" :
+    parser = argparse.ArgumentParser()
+    modelConfig = {
+  
+        "DDP": False,
+        "state": "train", # or eval
+        "epoch": 601,#10001,
+        "batch_size":16 ,
+        "T": 1000,
+        "channel": 128,
+        "channel_mult": [1, 2, 3, 4],
+        "attn": [2],
+        "num_res_blocks": 2,
+        "dropout": 0.15,
+        "lr": 5e-5,
+        "multiplier": 2.,
+        "beta_1": 1e-4,
+        "beta_T": 0.02,
+        "img_size": 32,
+        "grad_clip": 1.,
+        "device": "cuda", #MODIFIQUEI
+        "device_list": [0],
+        #"device_list": [3,2,1,0],
+        
+        "ddim":True,
+        "unconditional_guidance_scale":1,
+        "ddim_step":100
+    }
+
+
+    parser.add_argument('--dataset_path', type=str, default="./data/UWData2k2/")
+    parser.add_argument('--state', type=str, default="train")  #or eval
+    parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
+    parser.add_argument('--output_path', type=str, default="./output/")  #or eval
+
+    config = parser.parse_args()
+    
+    wandb.init(
+            project="CLEDiffusion",
+            config=vars(config),
+            name="Treino Diffusao sem mascaras",
+            tags=["Train","No mask"],
+            group="diffusion_train",
+            job_type="train",
+
+        )
+    
+    for key, value in modelConfig.items():
+        setattr(config, key, value)
+    
+    print(config)
+
+    train(config)
+
+    wandb.finish()
+
+    
+#start trainig papeline
+    # Start load config
+    # start Training
+    # Test with training
+
+#end training papeline
+
+#inference 
+

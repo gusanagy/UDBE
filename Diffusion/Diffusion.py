@@ -45,7 +45,7 @@ class GaussianDiffusionTrainer(nn.Module):
 
         self.L_color=None
         self.num=0
-        self.loss_fn_vgg = lpips.LPIPS(net='vgg')
+        self.loss_fn_vgg = lpips.LPIPS(net='vgg')#a vgg vem do lpips entao
 
 
 
