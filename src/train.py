@@ -1,38 +1,41 @@
+
+import torch
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.optim as optim
+#from matplotlib import pyplot as plt
+from torch.utils.data import DataLoader
+from torchvision import transforms
+import torch.utils.data as data
+from torchvision.datasets import CIFAR10
+from torchvision.utils import save_image
+from albumentations.pytorch import ToTensorV2
+import albumentations as A
+from Diffusion import GaussianDiffusionSampler, GaussianDiffusionTrainer
+from Diffusion.Model import UNet
+from Scheduler import GradualWarmupScheduler
+from tool_func import *
+from loss import Myloss
+from tensorboardX import SummaryWriter #provavelmente irei retirar o suporte a tensorboard
+from skimage.metrics import peak_signal_noise_ratio as PSNR
+from skimage.metrics import structural_similarity as SSIM    
+import numpy as np
+import glob
+import random
+import cv2
 import colorsys
 import os
 from typing import Dict, List
 import PIL
 import lpips as lpips
 from PIL import Image
-import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
-import cv2
-import torch
-import torch.optim as optim
-#from matplotlib import pyplot as plt
-from tqdm import tqdm
-from torch.utils.data import DataLoader
-from torchvision import transforms
-from torchvision.datasets import CIFAR10
-from torchvision.utils import save_image
-import albumentations as A
-from Diffusion import GaussianDiffusionSampler, GaussianDiffusionTrainer
-from Diffusion.Model import UNet
-from src.Scheduler import GradualWarmupScheduler
-from loss import Myloss
-import numpy as np
-from tensorboardX import SummaryWriter
-from skimage.metrics import peak_signal_noise_ratio as PSNR
-from skimage.metrics import structural_similarity as SSIM    
-import torch.utils.data as data
-import glob
-import random
-from albumentations.pytorch import ToTensorV2
 import lpips
 import time
 import argparse
+from tqdm import tqdm
 import wandb
 import random
+
 
 class load_data(data.Dataset):
     def __init__(self, input_data_low, input_data_high):
@@ -159,41 +162,41 @@ class load_data_test(data.Dataset):
         return [data_low, data_high,data_color,data_blur,self.input_data_low[idx]]
 
 
-def getSnrMap(data_low,data_blur):
-    data_low = data_low[:, 0:1, :, :] * 0.299 + data_low[:, 1:2, :, :] * 0.587 + data_low[:, 2:3, :, :] * 0.114
-    data_blur = data_blur[:, 0:1, :, :] * 0.299 + data_blur[:, 1:2, :, :] * 0.587 + data_blur[:, 2:3, :, :] * 0.114
-    noise = torch.abs(data_low - data_blur)
+# def getSnrMap(data_low,data_blur):
+#     data_low = data_low[:, 0:1, :, :] * 0.299 + data_low[:, 1:2, :, :] * 0.587 + data_low[:, 2:3, :, :] * 0.114
+#     data_blur = data_blur[:, 0:1, :, :] * 0.299 + data_blur[:, 1:2, :, :] * 0.587 + data_blur[:, 2:3, :, :] * 0.114
+#     noise = torch.abs(data_low - data_blur)
 
-    mask = torch.div(data_blur, noise + 0.0001)
+#     mask = torch.div(data_blur, noise + 0.0001)
 
-    batch_size = mask.shape[0]
-    height = mask.shape[2]
-    width = mask.shape[3]
-    mask_max = torch.max(mask.view(batch_size, -1), dim=1)[0]
-    mask_max = mask_max.view(batch_size, 1, 1, 1)
-    mask_max = mask_max.repeat(1, 1, height, width)
-    mask = mask * 1.0 / (mask_max + 0.0001)
+#     batch_size = mask.shape[0]
+#     height = mask.shape[2]
+#     width = mask.shape[3]
+#     mask_max = torch.max(mask.view(batch_size, -1), dim=1)[0]
+#     mask_max = mask_max.view(batch_size, 1, 1, 1)
+#     mask_max = mask_max.repeat(1, 1, height, width)
+#     mask = mask * 1.0 / (mask_max + 0.0001)
 
-    mask = torch.clamp(mask, min=0, max=1.0)
-    mask = mask.float()
-    return mask
+#     mask = torch.clamp(mask, min=0, max=1.0)
+#     mask = mask.float()
+#     return mask
 
-def rgb2gray(rgb):
-    return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
-
-
-def get_color_map(im):
-    return im / (rgb2gray(im)[..., np.newaxis] + 1e-6) * 100
-    # return im / (np.mean(im, axis=-1)[..., np.newaxis] + 1e-6) * 100
+# def rgb2gray(rgb):
+#     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
 
-def convert_to_grayscale(image):
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    return gray_image
+# def get_color_map(im):
+#     return im / (rgb2gray(im)[..., np.newaxis] + 1e-6) * 100
+#     # return im / (np.mean(im, axis=-1)[..., np.newaxis] + 1e-6) * 100
 
-def calculate_ssim(img1, img2):
-    score, _ = SSIM(img1, img2, full=True)
-    return score
+
+# def convert_to_grayscale(image):
+#     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#     return gray_image
+
+# def calculate_ssim(img1, img2):
+#     score, _ = SSIM(img1, img2, full=True)
+#     return score
 
 def train(config: Dict):
     if config.DDP==True:
@@ -214,13 +217,14 @@ def train(config: Dict):
     datapath_train_high = glob.glob(image_train_path)
     dataload_train=load_data(datapath_train_low, datapath_train_high)
 
+    ###Modificar aqui a forma como sao carregados os parametros
     if config.DDP == True:
         train_sampler = torch.utils.data.distributed.DistributedSampler(dataload_train)
         dataloader= DataLoader(dataload_train, batch_size=config.batch_size,sampler=train_sampler)
     else:
         dataloader = DataLoader(dataload_train, batch_size=config.batch_size, shuffle=True, num_workers=4,
                                 drop_last=True, pin_memory=True)
-        
+    #carrega o modelo com as configuracoes indicadas 
     net_model = UNet(T=config.T, ch=config.channel, ch_mult=config.channel_mult, attn=config.attn,
                      num_res_blocks=config.num_res_blocks, dropout=config.dropout)
 
@@ -367,9 +371,9 @@ def Test(config: Dict,epoch):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    save_txt_name =save_dir + 'res.txt'
-    f = open(save_txt_name, 'w+')
-    f.close()
+    # save_txt_name =save_dir + 'res.txt'
+    # f = open(save_txt_name, 'w+')
+    # f.close()
 
     image_num = 0
     psnr_list = []
