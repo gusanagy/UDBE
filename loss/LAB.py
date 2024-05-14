@@ -1,4 +1,4 @@
-from utility.ptcolor import rgb2lab
+from utility.ptcolor import rgb2lab #pegar no codigo original
 from utility.Qnt import quantAB,quantL
 import torch
 from torch.nn import functional
