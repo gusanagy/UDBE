@@ -18,7 +18,8 @@ from torchvision.utils import save_image
 import albumentations as A
 from Diffusion import GaussianDiffusionSampler, GaussianDiffusionTrainer
 from Diffusion.Model import UNet
-from src.Scheduler import GradualWarmupScheduler
+from .Scheduler import GradualWarmupScheduler
+from .tool_func import *
 from loss import Myloss
 import numpy as np
 from tensorboardX import SummaryWriter
@@ -137,7 +138,6 @@ def Test(config: Dict):
     
     datapath_test_low = glob.glob( test_low_path)
     datapath_test_high = glob.glob(test_high_path)
-    print(datapath_test_low[:5])
     dataload_test = load_data_test(datapath_test_low,datapath_test_high)
     dataloader = DataLoader(dataload_test, batch_size=1, num_workers=4,
                             drop_last=True, pin_memory=True)

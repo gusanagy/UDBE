@@ -1,5 +1,5 @@
 import torch
-from utility import ptcolor as ptcolor
+from .ptcolor import * 
 import torch.nn as nn
 
 class lch_Loss(nn.Module):
@@ -25,8 +25,10 @@ class lch_Loss(nn.Module):
 
 
     def forward(self,img,gt):
-        img_lch= ptcolor.rgb2lch(img)
-        gt_lch= ptcolor.rgb2lch(gt)
+        # img_lch= ptcolor.rgb2lch(img)
+        # gt_lch= ptcolor.rgb2lch(gt)
+        img_lch= rgb2lch(img)
+        gt_lch= rgb2lch(gt)
         loss_L=torch.mean(torch.abs(img_lch[:,0,:,:]-gt_lch[:,0,:,:]))
         loss_C=torch.mean(torch.abs(img_lch[:,1,:,:]-gt_lch[:,1,:,:]))
         img_H_Dist=torch.clamp(self.hue_to_distribution(img_lch[:,2,:,:],self.levels,self.eps),0.001, 0.999)

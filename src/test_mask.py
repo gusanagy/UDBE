@@ -18,7 +18,7 @@ from torchvision.utils import save_image
 import albumentations as A
 from Diffusion import GaussianDiffusionSampler, GaussianDiffusionTrainer
 from Diffusion.Model import UNet_Mask
-from src.Scheduler import GradualWarmupScheduler
+from .Scheduler import GradualWarmupScheduler
 from loss import Myloss
 import numpy as np
 from tensorboardX import SummaryWriter

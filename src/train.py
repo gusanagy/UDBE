@@ -13,8 +13,8 @@ from albumentations.pytorch import ToTensorV2
 import albumentations as A
 from Diffusion import GaussianDiffusionSampler, GaussianDiffusionTrainer
 from Diffusion.Model import UNet
-from Scheduler import GradualWarmupScheduler
-from tool_func import *
+from .Scheduler import GradualWarmupScheduler
+from .tool_func import *
 from loss import Myloss
 from tensorboardX import SummaryWriter #provavelmente irei retirar o suporte a tensorboard
 from skimage.metrics import peak_signal_noise_ratio as PSNR
@@ -44,6 +44,7 @@ class load_data(data.Dataset):
         print("Total training examples:", len(self.input_data_high))
         self.transform=A.Compose(
             [
+                A.resize(256, 256),
                 A.RandomCrop(height=128, width=128),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
@@ -416,8 +417,10 @@ def Test(config: Dict,epoch):
                     res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1] 
                     gt_img=np.clip(gt_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
                     low_img=np.clip(lowlight_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
-
-                    # compute psnr
+                    
+                    
+                    # Compute METRICS
+                    ## compute psnr
                     psnr = PSNR(res_Imgs, gt_img)
                     #ssim = SSIM(res_Imgs, gt_img, channel_axis=2,data_range=255)
                     res_gray = rgb2gray(res_Imgs)
@@ -443,7 +446,8 @@ def Test(config: Dict,epoch):
                     # cv2.imwrite(save_path, output * 255)
                     # save_path =save_dir+ name+'.png'
                     # cv2.imwrite(save_path, res_Imgs)
-
+                
+                #Metrics
   
                 avg_psnr = sum(psnr_list) / len(psnr_list)
                 avg_ssim = sum(ssim_list) / len(ssim_list)
@@ -505,24 +509,24 @@ if __name__== "__main__" :
 
     parser.add_argument('--dataset_path', type=str, default="./data/UWData2k2/")
     parser.add_argument('--state', type=str, default="train")  #or eval
-    parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
+    parser.add_argument('--pretrained_path', type=str, default=None)  #or eval ajustar pastas para salvar os conteudos
     parser.add_argument('--output_path', type=str, default="./output/")  #or eval
 
     config = parser.parse_args()
     
-    wandb.init(
-            project="CLEDiffusion",
-            config=vars(config),
-            name="Treino Diffusao sem mascaras",
-            tags=["Train","No mask"],
-            group="diffusion_train",
-            job_type="train",
+    # wandb.init(
+    #         project="CLEDiffusion",
+    #         config=vars(config),
+    #         name="Treino Diffusao sem mascaras",
+    #         tags=["Train","No mask"],
+    #         group="diffusion_train",
+    #         job_type="train",
 
-        )
+        # )
     
     for key, value in modelConfig.items():
         setattr(config, key, value)
     print(config)
-    train(config)
-    wandb.finish()
+    #train(config)
+    # wandb.finish()
     #Test_for_one(modelConfig,epoch=14000)

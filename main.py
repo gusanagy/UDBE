@@ -1,5 +1,6 @@
 import wandb
 import argparse
+from src import train, test, mask_generation, inference
 
 #import packages
 
@@ -10,7 +11,7 @@ if __name__== "__main__" :
   
         "DDP": False,
         "state": "train", # or eval
-        "epoch": 601,#10001,
+        "epoch": 10001,
         "batch_size":16 ,
         "T": 1000,
         "channel": 128,
@@ -25,7 +26,7 @@ if __name__== "__main__" :
         "img_size": 32,
         "grad_clip": 1.,
         "device": "cuda", #MODIFIQUEI
-        "device_list": [0],
+        "device_list": [0, 1],
         #"device_list": [3,2,1,0],
         
         "ddim":True,
@@ -34,6 +35,7 @@ if __name__== "__main__" :
     }
 
     ##Adicionar ao arg parse o transfer learning manual para o mask diffusion
+    parser.add_argument('--model', type=str, default="standart")#mask is the second option
     parser.add_argument('--dataset_path', type=str, default="./data/UWData2k2/")
     parser.add_argument('--state', type=str, default="train")  #or eval
     parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
@@ -44,7 +46,7 @@ if __name__== "__main__" :
     wandb.init(
             project="CLEDiffusion",
             config=vars(config),
-            name="Treino Diffusao sem mascaras",
+            name="Treino e Teste Diffusao sem mascaras",
             tags=["Train","No mask"],
             group="diffusion_train",
             job_type="train",

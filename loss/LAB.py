@@ -1,5 +1,5 @@
-from utility.ptcolor import rgb2lab #pegar no codigo original
-from utility.Qnt import quantAB,quantL
+from .ptcolor import rgb2lab #pegar no codigo original
+from .Qnt import quantAB,quantL
 import torch
 from torch.nn import functional
 import torch.nn as nn
@@ -20,6 +20,7 @@ class lab_Loss(nn.Module):
         return p
 
     def Hist_2_Dist_AB(self,img,tab,alpha):
+        #print("imagem esta no cuda? ",img.is_cuda,"tab esta no cuda? ",tab.is_cuda)
         img_dist=((img.unsqueeze(1)-tab)**2).sum(2)
         p = torch.nn.functional.softmax(-alpha*img_dist, dim=1)
         return p
@@ -31,14 +32,10 @@ class lab_Loss(nn.Module):
         loss = -(q*torch.log(p)).sum([1,2,3]).mean()
         return loss
 
-
-
-
     def forward(self,img,gt):
         tab=quantAB(self.levels,self.vmin,self.vmax).cuda()
-        lab_img=torch.clamp(rgb2lab(img),self.vmin,self.vmax)
-        lab_gt=torch.clamp(rgb2lab(gt),self.vmin,self.vmax)
-
+        lab_img=torch.clamp(rgb2lab(img.cuda()),self.vmin,self.vmax).cuda()
+        lab_gt=torch.clamp(rgb2lab(gt),self.vmin,self.vmax).cuda()
         loss_l=torch.abs(lab_img[:,0,:,:]-lab_gt[:,0,:,:]).mean()
         loss_AB=self.loss_ab(lab_img[:,1:,:,:],lab_gt[:,1:,:,:],self.alpha,tab,self.levels)
         loss=loss_l+self.weight*loss_AB
