@@ -124,10 +124,7 @@ class DarkChannelPriorLoss(nn.Module):
         loss = torch.mean(dark_channel_prior)
 
         return loss
-#adcicionar algumas VGG 16 11 19
-#adicionar alexnet
-#adicionar squeezenet
-#adicionar L1 
+
 class L1Loss(nn.Module):
     def __init__(self):
         super(L1Loss, self).__init__()
@@ -139,3 +136,8 @@ class L1Loss(nn.Module):
         loss = torch.mean(abs_diff)
         return loss
 
+#adcicionar algumas VGG 16 11 19
+
+#adicionar alexnet
+
+#adicionar squeezenet
