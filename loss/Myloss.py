@@ -136,8 +136,20 @@ class L1Loss(nn.Module):
         loss = torch.mean(abs_diff)
         return loss
 
-#adcicionar algumas VGG 16 11 19
+#adcicionar algumas VGG 16(Ja adicionada ao trabalho) 11 19
+class VGG16(nn.Module):
+    def __init__(self):
+        super(L1Loss, self).__init__()
 
-#adicionar alexnet
-
-#adicionar squeezenet
+    def forward(self, input, target):
+        # Calcula a diferença absoluta entre o input e o target
+        abs_diff = torch.abs(input - target)
+        # Calcula a média da diferença absoluta
+        loss = torch.mean(abs_diff)
+        return loss
+    
+# LPIPS(net='vgg')#VGG16
+# #adicionar alexnet(Adicionada)
+# LPIPS(net='alex')
+# #adicionar squeezenet(Adicionada)
+# LPIPS(net='squeeze')
