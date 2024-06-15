@@ -1,6 +1,10 @@
 import os
 import random
 import math
+import cv2
+import numpy as np
+import glob
+
 
 def split_dataset(dataset_size, proportions, dataset_path):
     # Garantindo que a soma das proporções seja 1.0
@@ -37,4 +41,60 @@ def split_dataset(dataset_size, proportions, dataset_path):
     # }
 
 # Exemplo de uso
+def check_alpha_channel(image_path):
+    # Carregar imagem com OpenCV
+    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
 
+    # Verificar o número de canais
+    num_channels = image.shape[2] if len(image.shape) == 3 else 1
+    
+    if num_channels < 4:
+        # Converter de BGR para RGB
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # Adicionar um canal alfa (definindo um valor fixo para alpha)
+        rgba_image = np.zeros((rgb_image.shape[0], rgb_image.shape[1], 4), dtype=np.uint8)
+        rgba_image[:, :, :3] = rgb_image  # Copiar RGB para os primeiros 3 canais
+        rgba_image[:, :, 3] = 255  # Definir canal alfa como 255 (totalmente opaco)
+
+        return rgba_image
+    else:
+
+        return image
+
+
+
+def load_image_paths(dataset_path, dataset="all",task="train"):
+    """
+    dataset_path: endereço do dataset raiz
+    dataset: "all", "UIEB", "RUIE", "SUIM"
+    task: "train", "val"
+
+    """
+    image_paths = []
+    if dataset == "all":
+        # Constrói os padrões de caminho para os arquivos .jpg e .png dentro das pastas train e train/images
+        pattern1_jpg = os.path.join(dataset_path, "*", f"{task}", "*.jpg")
+        pattern2_jpg = os.path.join(dataset_path, "*", f"{task}", "images", "*.jpg")
+        pattern1_png = os.path.join(dataset_path, "*", f"{task}", "*.png")
+        pattern2_png = os.path.join(dataset_path, "*", f"{task}", "images", "*.png")
+        pattern3_jpg = os.path.join(dataset_path, "*", "*",f"{task}", "*.jpg")
+
+        
+        # Encontra todos os arquivos .jpg e .png correspondentes aos padrões
+        image_paths.extend(glob.glob(pattern1_jpg))
+        image_paths.extend(glob.glob(pattern2_jpg))
+        image_paths.extend(glob.glob(pattern1_png))
+        image_paths.extend(glob.glob(pattern2_png))
+        image_paths.extend(glob.glob(pattern3_jpg))
+    elif dataset == "SUIM":
+         pattern2_jpg = os.path.join(dataset_path, "*", f"{task}", "images", "*.jpg")
+         image_paths.extend(glob.glob(pattern2_jpg))
+    elif dataset == "UIEB":
+        pattern1_png = os.path.join(dataset_path, "*", f"{task}", "*.png")
+        image_paths.extend(glob.glob(pattern1_png))
+    elif dataset == "RUIEB":
+        pattern3_jpg = os.path.join(dataset_path, "*", "*",f"{task}", "*.jpg")
+        image_paths.extend(glob.glob(pattern3_jpg))
+        
+    return image_paths

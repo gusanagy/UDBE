@@ -35,6 +35,7 @@ import argparse
 from tqdm import tqdm
 import wandb
 import random
+from src.split_data import check_alpha_channel, load_image_paths
 
 
 class load_data(data.Dataset):
@@ -60,7 +61,11 @@ class load_data(data.Dataset):
         seed = torch.random.seed()
 
         data_low = cv2.imread(self.input_data_low[idx])
-        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-140) #modificação para ajuste automatico de brilho para datalow
+        ###
+        data_low = check_alpha_channel(data_low)
+        ###
+
+        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-random.randint(100, 150)) #modificação para ajuste automatico de brilho para datalow
         data_low=data_low[:,:,::-1].copy()
         random.seed(1)
         data_low=data_low/255.0
@@ -207,16 +212,8 @@ def train(config: Dict):
         dist.init_process_group(backend='nccl')
         device = torch.device("cuda", local_rank)
     
-    ###MODIFICAR AQUI AS FUNCOES PARA CARREGAR O DATASET E MUDAR A LUMINOSIDADE
-
-    # train_low_path=config.dataset_path+r'our485/low/*.png'    #mudar endereços
-    # train_high_path=config.dataset_path+r'our485/low/*.png'    #mudar endereços
-    #train_low_path=config.dataset_path+r'low/*.png'    #mudar endereços
-    image_train_path=config.dataset_path+r'*.png' #enderecamento geral para todas as imagens Dataset UW2Data
-
-    datapath_train_low = glob.glob(image_train_path)
-    datapath_train_high = glob.glob(image_train_path)
-    dataload_train=load_data(datapath_train_low, datapath_train_high)
+    datapath_train = load_image_paths(config.dataset_path,config.dataset)
+    dataload_train=load_data(datapath_train, datapath_train)
 
     ###Modificar aqui a forma como sao carregados os parametros
     if config.DDP == True:
@@ -508,6 +505,7 @@ if __name__== "__main__" :
 
 
     parser.add_argument('--dataset_path', type=str, default="./data/UWData2k2/")
+    parser.add_argument('--dataset', type=str, default="./data/UDWdata/")
     parser.add_argument('--state', type=str, default="train")  #or eval
     parser.add_argument('--pretrained_path', type=str, default=None)  #or eval ajustar pastas para salvar os conteudos
     parser.add_argument('--output_path', type=str, default="./output/")  #or eval
