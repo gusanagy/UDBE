@@ -5,6 +5,35 @@ Institutions:
 
 # Data
 
+ ```
+ UWSData
+├── RUIE
+│    ├── UCCS
+│    |    ├── train
+│    |    └── val
+│    ├── UIQS
+│    |    ├── train
+│    |    └── val
+│    └── UTTS
+│         ├── train
+│         └── val
+├── SUIM
+│    |── train
+|    |    ├── images
+|    |    └── masks
+│    └── val
+|         ├── images
+|         └── masks
+└── UIEB
+      ├── train
+      └── val
+```
+
+
+## Uso do Dataset
+
+Este dataset é organizado para facilitar o treinamento e a validação de modelos de aprendizado de máquina. As imagens estão divididas em conjuntos de treino (`train`) e validação (`val`) para cada categoria específica. Certifique-se de utilizar as imagens dos diretórios correspondentes conforme necessário para seus experimentos.
+
 
 # Checkpoint
 
