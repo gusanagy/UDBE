@@ -45,7 +45,7 @@ class load_data(data.Dataset):
         print("Total training examples:", len(self.input_data_high))
         self.transform=A.Compose(
             [
-                A.resize(256, 256),
+                A.LongestMaxSize(max_size=256),
                 A.RandomCrop(height=128, width=128),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
@@ -59,13 +59,13 @@ class load_data(data.Dataset):
 
     def __getitem__(self, idx):
         seed = torch.random.seed()
-
         data_low = cv2.imread(self.input_data_low[idx])
+
         ###
-        data_low = check_alpha_channel(data_low)
+        #data_low = check_alpha_channel(self.input_data_low[idx])
         ###
 
-        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-random.randint(100, 150)) #modificação para ajuste automatico de brilho para datalow
+        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-random.randint(90, 150)) #modificação para ajuste automatico de brilho para datalow
         data_low=data_low[:,:,::-1].copy()
         random.seed(1)
         data_low=data_low/255.0
@@ -88,6 +88,7 @@ class load_data(data.Dataset):
         data_color=data_low/(color_max+ 1e-6)
 
         data_high = cv2.imread(self.input_data_high[idx])
+        #data_high = check_alpha_channel(self.input_data_low[idx])
         data_high=data_high[:,:,::-1].copy()
         #data_high = Image.fromarray(data_high)
         random.seed(1)

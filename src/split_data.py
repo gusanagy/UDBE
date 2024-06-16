@@ -44,10 +44,9 @@ def split_dataset(dataset_size, proportions, dataset_path):
 def check_alpha_channel(image_path):
     # Carregar imagem com OpenCV
     image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-
+    print("Antes de se transformar: ",image.shape, image_path)
     # Verificar o número de canais
-    num_channels = image.shape[2] if len(image.shape) == 3 else 1
-    
+    num_channels = image.shape[2]
     if num_channels < 4:
         # Converter de BGR para RGB
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -56,10 +55,11 @@ def check_alpha_channel(image_path):
         rgba_image = np.zeros((rgb_image.shape[0], rgb_image.shape[1], 4), dtype=np.uint8)
         rgba_image[:, :, :3] = rgb_image  # Copiar RGB para os primeiros 3 canais
         rgba_image[:, :, 3] = 255  # Definir canal alfa como 255 (totalmente opaco)
+        print("transformada :", rgba_image.shape)
 
         return rgba_image
     else:
-
+        print("NAo transformada: ", image.shape)
         return image
 
 
@@ -93,7 +93,7 @@ def load_image_paths(dataset_path, dataset="all",task="train"):
     elif dataset == "UIEB":
         pattern1_png = os.path.join(dataset_path, "*", f"{task}", "*.png")
         image_paths.extend(glob.glob(pattern1_png))
-    elif dataset == "RUIEB":
+    elif dataset == "RUIE":
         pattern3_jpg = os.path.join(dataset_path, "*", "*",f"{task}", "*.jpg")
         image_paths.extend(glob.glob(pattern3_jpg))
         
