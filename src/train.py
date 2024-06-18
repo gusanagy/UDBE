@@ -43,15 +43,17 @@ class load_data(data.Dataset):
         self.input_data_low = input_data_low
         self.input_data_high = input_data_high
         print("Total training examples:", len(self.input_data_high))
-        self.transform=A.Compose(
+        self.transform_low=A.Compose(
             [
-                A.LongestMaxSize(max_size=256),
+                deimnuir o brilho
+                A. Resize (height=256, width=256),
                 A.RandomCrop(height=128, width=128),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
                 ToTensorV2(),
             ]
         )
+        
 
 
     def __len__(self):  
@@ -66,6 +68,7 @@ class load_data(data.Dataset):
         ###
 
         data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-random.randint(90, 150)) #modificação para ajuste automatico de brilho para datalow
+
         data_low=data_low[:,:,::-1].copy()
         random.seed(1)
         data_low=data_low/255.0
@@ -73,8 +76,10 @@ class load_data(data.Dataset):
         data_low=np.power(data_low,0.25)
         data_low = self.transform(image=data_low)["image"]
         #mean and var of lol training dataset. If you change dataset, please change mean and var.
-        mean=torch.tensor([0.4350, 0.4445, 0.4086])  
-        var=torch.tensor([0.0193, 0.0134, 0.0199])
+        #mean=torch.tensor([0.4350, 0.4445, 0.4086])  
+        #var=torch.tensor([0.0193, 0.0134, 0.0199])
+        mean=torch.tensor([0.5, 0.5, 0.5])  
+        var=torch.tensor([0.5, 0.5, 0.5])
         data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
         data_low=data_low/20
 
@@ -124,20 +129,24 @@ class load_data_test(data.Dataset):
         seed = torch.random.seed()
 
         data_low = cv2.imread(self.input_data_low[idx])
-        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-140) #modificação para ajuste automatico de brilho para datalow
+        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-140) #modificação para ajuste automatico de brilho para datalow // testar com collor jitter
 
+        ### Processamento das imagens // Avaliar aplicação // funcionalizar
+        # Conversão de canais de cor e normalização
         data_low=data_low[:,:,::-1].copy()
         random.seed(1)
         data_low=data_low/255.0
-
+        # Aplicação de correção gamma
         data_low=np.power(data_low,0.25)
+
+        # Transformação e normalização
         data_low = self.transform(image=data_low)["image"]
         mean=torch.tensor([0.4350, 0.4445, 0.4086])
         var=torch.tensor([0.0193, 0.0134, 0.0199])
         data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
         data_low=data_low/20
 
-
+        # Calcular máximos dos canais de cor e normalização de cor
         data_max_r=data_low[0].max()
         data_max_g = data_low[1].max()
         data_max_b = data_low[2].max()
@@ -150,6 +159,7 @@ class load_data_test(data.Dataset):
         #data_color=torch.from_numpy(data_color).float()
         #data_color=data_color.permute(2,0,1)
 
+        # Processamento da imagem de alta luminosidade
         data_high = cv2.imread(self.input_data_high[idx])
         data_high=data_high[:,:,::-1].copy()
         #data_high = Image.fromarray(data_high)
@@ -160,6 +170,7 @@ class load_data_test(data.Dataset):
         #normalization
         #data_high=data_high**0.25
 
+        # Desfocagem e preparação do retorno
         data_blur = data_low.permute(1, 2, 0).numpy() * 255.0
         data_blur = cv2.blur(data_blur, (5, 5))
         data_blur = data_blur * 1.0 / 255.0
@@ -213,6 +224,7 @@ def train(config: Dict):
         dist.init_process_group(backend='nccl')
         device = torch.device("cuda", local_rank)
     
+    ###load the data
     datapath_train = load_image_paths(config.dataset_path,config.dataset)
     dataload_train=load_data(datapath_train, datapath_train)
 
@@ -240,7 +252,7 @@ def train(config: Dict):
         device=config.device_list[0]
         net_model.to(device)
 
-
+    ##Set modeltools
     optimizer = torch.optim.AdamW(
         net_model.parameters(), lr=config.lr, weight_decay=1e-4)
     cosineScheduler = optim.lr_scheduler.CosineAnnealingLR(
@@ -254,20 +266,21 @@ def train(config: Dict):
     log_savedir=config.output_path+'/logs/'
     if not os.path.exists(log_savedir):
         os.makedirs(log_savedir)
-    writer = SummaryWriter(log_dir=log_savedir)#sumario de escrita 
+    #writer = SummaryWriter(log_dir=log_savedir)#sumario de escrita 
 
     ckpt_savedir=config.output_path+'/ckpt/'
     if not os.path.exists(ckpt_savedir):
         os.makedirs(ckpt_savedir)
+    #save_txt= config.output_path + 'res.txt'
 
-    save_txt= config.output_path + 'res.txt'
+    #### Start training routine
+    ###Modificar rotina de treino e forma como tqdm funciona // Inserir teste das novas metricas no treinamento
     num=0
-    #num=600
     for e in range(config.epoch):
         if config.DDP == True:
            dataloader.sampler.set_epoch(e)
 
-        with tqdm(dataloader, dynamic_ncols=True) as tqdmDataLoader:
+        with tqdm(dataloader, dynamic_ncols=True) as tqdmDataLoader:##nao ajustar loacal do tqdm para cima//usa a estrtura do posfix
             for data_low, data_high, data_color, data_blur in tqdmDataLoader:
                 data_high = data_high.to(device)
                 data_low = data_low.to(device)
@@ -276,16 +289,20 @@ def train(config: Dict):
                 snr_map = getSnrMap(data_low, data_blur)
                 data_concate=torch.cat([data_color, snr_map], dim=1)
                 optimizer.zero_grad()
+
                 [loss, mse_loss, col_loss,exp_loss,ssim_loss,vgg_loss] = trainer(data_high, data_low,data_concate,e)
+                ###calcula a media das funcoes de perda apos os passos do sampler
                 loss = loss.mean()
                 mse_loss = mse_loss.mean()
                 ssim_loss=ssim_loss.mean()
                 vgg_loss = vgg_loss.mean()
+
                 loss.backward()
 
                 torch.nn.utils.clip_grad_norm_(
                     net_model.parameters(), config.grad_clip)
                 optimizer.step()
+                ###3ntender esta linha
                 tqdmDataLoader.set_postfix(ordered_dict={
                     "epoch": e,
                     "loss: ": loss.item(),
@@ -303,13 +320,13 @@ def train(config: Dict):
                 col_num=col_loss.item()
                 ssim_num = ssim_loss.item()
                 vgg_num=vgg_loss.item()
-                writer.add_scalars('loss', {"loss_total":loss_num,
-                                             "mse_loss":mse_num,
-                                             "exp_loss":exp_num,
-                                            'ssim_loss':ssim_num,
-                                             "col_loss":col_num,
-                                            "vgg_loss":vgg_num,
-                                              }, num)
+                # writer.add_scalars('loss', {"loss_total":loss_num,
+                #                              "mse_loss":mse_num,
+                #                              "exp_loss":exp_num,
+                #                             'ssim_loss':ssim_num,
+                #                              "col_loss":col_num,
+                #                             "vgg_loss":vgg_num,
+                #                               }, num)
                 #Wandb Logs 
                 wandb.log({"Train":{
                     "epoch": e,

@@ -12,7 +12,7 @@ python evaluate.py RESULT_PATH
 #calcular UQIM
 #calcular UCIQE
 import numpy as np
-from skimage.measure import compare_psnr, compare_ssim
+#from skimage.measure import compare_psnr, compare_ssim
 import math
 import sys
 from skimage import io, color, filters
