@@ -35,7 +35,8 @@ def nmetrics(a):
     sc = (np.mean((chroma - uc)**2))**0.5
 
     #2nd term
-    top = np.int(np.round(0.01*l.shape[0]*l.shape[1]))
+    top = int(np.round(0.01 * l.shape[0] * l.shape[1]))
+    #top = np.int(np.round(0.01*l.shape[0]*l.shape[1]))
     sl = np.sort(l,axis=None)
     isl = sl[::-1]
     conl = np.mean(isl[:top])-np.mean(sl[:top])
@@ -65,8 +66,8 @@ def nmetrics(a):
     ybl = np.sort(yb,axis=None)
     al1 = 0.1
     al2 = 0.1
-    T1 = np.int(al1 * len(rgl))
-    T2 = np.int(al2 * len(rgl))
+    T1 = int(al1 * len(rgl))
+    T2 = int(al2 * len(rgl))
     rgl_tr = rgl[T1:-T2]
     ybl_tr = ybl[T1:-T2]
 
@@ -123,8 +124,8 @@ def eme(ch,blocksize=8):
             
             block = ch[xlb:xrb,ylb:yrb]
 
-            blockmin = np.float(np.min(block))
-            blockmax = np.float(np.max(block))
+            blockmin = float(np.min(block))
+            blockmax = float(np.max(block))
 
             # # old version
             # if blockmin == 0.0: eme += 0
@@ -146,7 +147,7 @@ def plipsub(i,j,k=1026):
 def plipmult(c,j,gamma=1026):
     return gamma - gamma * (1 - j / gamma)**c
 
-def logamee(ch,blocksize=8):
+def logamee(ch, blocksize=8):
 
     num_x = math.ceil(ch.shape[0] / blocksize)
     num_y = math.ceil(ch.shape[1] / blocksize)
@@ -169,20 +170,23 @@ def logamee(ch,blocksize=8):
             else:
                 yrb = ch.shape[1]
             
-            block = ch[xlb:xrb,ylb:yrb]
-            blockmin = np.float(np.min(block))
-            blockmax = np.float(np.max(block))
+            block = ch[xlb:xrb, ylb:yrb]
+            blockmin = float(np.min(block))
+            blockmax = float(np.max(block))
 
-            top = plipsub(blockmax,blockmin)
-            bottom = plipsum(blockmax,blockmin)
+            top = plipsub(blockmax, blockmin)
+            bottom = plipsum(blockmax, blockmin)
 
-            m = top/bottom
-            if m ==0.:
-                s+=0
+            if bottom == 0:
+                m = 0
             else:
-                s += (m) * np.log(m)
+                m = top / bottom
+            
+            if m != 0:
+                s += m * np.log(m)
 
-    return plipmult(w,s)
+    return plipmult(w, s)
+
 
 def main():
     result_path = sys.argv[1]
@@ -214,3 +218,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    #python3 Metrics/metrics.py "data/UDWdata/UIEB/val"
