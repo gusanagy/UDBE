@@ -336,7 +336,7 @@ def train(config: Dict):
                     'SSIM Loss':ssim_num,
                     'VGG Loss':vgg_num,
                 }})
-                num+=1## olhar no codigo original se ja estava assim esse num
+                num+=1
                 #Adicionar uma flag do wandb para acompanhar a loss// adaptar o summary writer do tensor board
 
         warmUpScheduler.step()
