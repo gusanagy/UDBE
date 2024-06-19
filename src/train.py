@@ -45,7 +45,6 @@ class load_data(data.Dataset):
         print("Total training examples:", len(self.input_data_high))
         self.transform=A.Compose(
             [
-                #dimnuir o brilho
                 A.Resize (height=256, width=256),
                 A.RandomCrop(height=128, width=128),
                 A.HorizontalFlip(p=0.5),
@@ -72,16 +71,14 @@ class load_data(data.Dataset):
         data_low=np.power(data_low,0.5)#0.25 # Aplicação da correção gamma ajustada para imagens subaquáticas
         data_low = self.transform(image=data_low)["image"]
         #mean and var of lol training dataset. If you change dataset, please change mean and var.
-
-        #Média dos canais de cor: tensor([0.2255, 0.4897, 0.4174])
-        #Variância dos canais de cor: tensor([0.0259, 0.0338, 0.0383])
-
-        # mean=torch.tensor([0.2255, 0.4897, 0.4174])
-        # var=torch.tensor([0.0259, 0.0338, 0.0383])
-        mean=torch.tensor([0.4174, 0.4897, 0.2255])
-        var=torch.tensor([0.0383, 0.0338, 0.0259])
+        ##RGB normalization
+        mean=torch.tensor([0.2255, 0.4897, 0.4174])
+        var=torch.tensor([0.0259, 0.0338, 0.0383])
+        ##BGR normalization
+        #mean=torch.tensor([0.4174, 0.4897, 0.2255])
+        #var=torch.tensor([0.0383, 0.0338, 0.0259])
         data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
-        data_low=data_low/30#20
+        data_low=data_low/20#20
 
         data_max_r=data_low[0].max()
         data_max_g = data_low[1].max()
@@ -115,7 +112,7 @@ class load_data_test(data.Dataset):
     def __init__(self, input_data_low, input_data_high):
         self.input_data_low = input_data_low
         self.input_data_high = input_data_high
-        print("Total training examples:", len(self.input_data_high))
+        print("Total test-training examples:", len(self.input_data_high))
         self.transform=A.Compose(
             [
                 ToTensorV2(),
@@ -130,7 +127,6 @@ class load_data_test(data.Dataset):
         seed = torch.random.seed()
 
         data_low = cv2.imread(self.input_data_low[idx])
-        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-140) #modificação para ajuste automatico de brilho para datalow // testar com collor jitter
 
         ### Processamento das imagens // Avaliar aplicação // funcionalizar
         # Conversão de canais de cor e normalização
@@ -138,12 +134,14 @@ class load_data_test(data.Dataset):
         random.seed(1)
         data_low=data_low/255.0
         # Aplicação de correção gamma
-        data_low=np.power(data_low,0.25)
+        data_low=np.power(data_low,0.5)
 
         # Transformação e normalização
         data_low = self.transform(image=data_low)["image"]
-        mean=torch.tensor([0.4350, 0.4445, 0.4086])
-        var=torch.tensor([0.0193, 0.0134, 0.0199])
+        # mean=torch.tensor([0.4350, 0.4445, 0.4086])
+        # var=torch.tensor([0.0193, 0.0134, 0.0199])
+        mean=torch.tensor([0.2255, 0.4897, 0.4174])
+        var=torch.tensor([0.0259, 0.0338, 0.0383])
         data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
         data_low=data_low/20
 
@@ -226,7 +224,7 @@ def train(config: Dict):
         device = torch.device("cuda", local_rank)
     
     ###load the data
-    datapath_train = load_image_paths(config.dataset_path,config.dataset)
+    datapath_train = load_image_paths(config.dataset_path,config.dataset)[0]
     dataload_train=load_data(datapath_train, datapath_train)
 
     ###Modificar aqui a forma como sao carregados os parametros
@@ -236,7 +234,7 @@ def train(config: Dict):
     else:
         dataloader = DataLoader(dataload_train, batch_size=config.batch_size, shuffle=True, num_workers=4,
                                 drop_last=True, pin_memory=True)
-    #carrega o modelo com as configuracoes indicadas 
+    ###carrega o modelo com as configuracoes indicadas 
     net_model = UNet(T=config.T, ch=config.channel, ch_mult=config.channel_mult, attn=config.attn,
                      num_res_blocks=config.num_res_blocks, dropout=config.dropout)
 
@@ -342,11 +340,7 @@ def train(config: Dict):
                 #Adicionar uma flag do wandb para acompanhar a loss// adaptar o summary writer do tensor board
 
         warmUpScheduler.step()
-        ##################################################
-        #Rodar teste aqui em determinado numero de epocas#
-        ##################################################
-        #save ckpt and evaluate on test dataset
-        #if e % 300 == 0 or e == 1000:
+      
         if e % 400 == 0:
             if config.DDP == True:
                 if dist.get_rank() == 0:
@@ -355,6 +349,7 @@ def train(config: Dict):
             elif config.DDP == False:
                 torch.save(net_model.state_dict(), os.path.join(
                     ckpt_savedir, 'ckpt_' + str(e) + "_.pt"))
+            ##TEST FUNCTION
 
         # if e % 50==0:
         #     avg_psnr,avg_ssim=Test(config,e)

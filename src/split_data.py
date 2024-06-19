@@ -96,5 +96,13 @@ def load_image_paths(dataset_path, dataset="all",task="train"):
     elif dataset == "RUIE":
         pattern3_jpg = os.path.join(dataset_path, "*", "*",f"{task}", "*.jpg")
         image_paths.extend(glob.glob(pattern3_jpg))
-        
-    return image_paths
+    
+    # Embaralha os caminhos das imagens
+    random.shuffle(image_paths)
+
+    # Divide os dados em 80% para treino e 20% para teste
+    split_index = int(len(image_paths) * 0.8)
+    train_paths = image_paths[:split_index]
+    test_paths = image_paths[split_index:]
+    
+    return train_paths, test_paths
