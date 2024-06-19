@@ -43,10 +43,10 @@ class load_data(data.Dataset):
         self.input_data_low = input_data_low
         self.input_data_high = input_data_high
         print("Total training examples:", len(self.input_data_high))
-        self.transform_low=A.Compose(
+        self.transform=A.Compose(
             [
-                deimnuir o brilho
-                A. Resize (height=256, width=256),
+                #dimnuir o brilho
+                A.Resize (height=256, width=256),
                 A.RandomCrop(height=128, width=128),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
@@ -63,25 +63,25 @@ class load_data(data.Dataset):
         seed = torch.random.seed()
         data_low = cv2.imread(self.input_data_low[idx])
 
-        ###
-        #data_low = check_alpha_channel(self.input_data_low[idx])
-        ###
-
-        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-random.randint(90, 150)) #modificação para ajuste automatico de brilho para datalow
+        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-random.randint(50, 100)) #modificação para ajuste automatico de brilho para datalow
 
         data_low=data_low[:,:,::-1].copy()
         random.seed(1)
         data_low=data_low/255.0
 
-        data_low=np.power(data_low,0.25)
+        data_low=np.power(data_low,0.5)#0.25 # Aplicação da correção gamma ajustada para imagens subaquáticas
         data_low = self.transform(image=data_low)["image"]
         #mean and var of lol training dataset. If you change dataset, please change mean and var.
-        #mean=torch.tensor([0.4350, 0.4445, 0.4086])  
-        #var=torch.tensor([0.0193, 0.0134, 0.0199])
-        mean=torch.tensor([0.5, 0.5, 0.5])  
-        var=torch.tensor([0.5, 0.5, 0.5])
+
+        #Média dos canais de cor: tensor([0.2255, 0.4897, 0.4174])
+        #Variância dos canais de cor: tensor([0.0259, 0.0338, 0.0383])
+
+        # mean=torch.tensor([0.2255, 0.4897, 0.4174])
+        # var=torch.tensor([0.0259, 0.0338, 0.0383])
+        mean=torch.tensor([0.4174, 0.4897, 0.2255])
+        var=torch.tensor([0.0383, 0.0338, 0.0259])
         data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
-        data_low=data_low/20
+        data_low=data_low/30#20
 
         data_max_r=data_low[0].max()
         data_max_g = data_low[1].max()
@@ -90,10 +90,12 @@ class load_data(data.Dataset):
         color_max[0,:,:]=data_max_r*torch.ones((data_low.shape[1],data_low.shape[2]))    
         color_max[1,:, :] = data_max_g * torch.ones((data_low.shape[1], data_low.shape[2]))
         color_max[2,:, :] = data_max_b * torch.ones((data_low.shape[1], data_low.shape[2]))
-        data_color=data_low/(color_max+ 1e-6)
+        data_color=data_low/(color_max + 1e-6)
 
         data_high = cv2.imread(self.input_data_high[idx])
-        #data_high = check_alpha_channel(self.input_data_low[idx])
+
+        data_high = cv2.convertScaleAbs(data_high, alpha=1.0, beta=random.randint(50, 100)) #modificação para ajuste automatico de brilho para datalow
+
         data_high=data_high[:,:,::-1].copy()
         #data_high = Image.fromarray(data_high)
         random.seed(1)
@@ -104,7 +106,6 @@ class load_data(data.Dataset):
         data_blur = cv2.blur(data_blur, (5, 5))
         data_blur = data_blur * 1.0 / 255.0
         data_blur = torch.Tensor(data_blur).float().permute(2, 0, 1)
-
 
         return [data_low, data_high,data_color,data_blur]
 

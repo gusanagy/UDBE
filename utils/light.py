@@ -4,17 +4,17 @@ import cv2 as cv
 import numpy as np
 import argparse
 # Read image given by user
-#parser = argparse.ArgumentParser(description='Code for Changing the contrast and brightness of an image! tutorial.')
-#parser.add_argument('--input', help='Path to input image.', default='lena.jpg')
-#args = parser.parse_args()
+parser = argparse.ArgumentParser(description='Code for Changing the contrast and brightness of an image! tutorial.')
+parser.add_argument('--value',type=int, help='value to brithness change.', default='100')
+args = parser.parse_args()
 #image = cv.imread(cv.samples.findFile(args.input))
-image = cv.imread("LOL results/1.png")
+image = cv.imread("data/UDWdata/SUIM/val/images/d_r_47_.jpg")
 if image is None:
    print('Could not open or find the image ')
    exit(0)
 #new_image = np.zeros(image.shape, image.dtype)
 alpha = 1.0 # Simple contrast control
-beta = -140 # Simple brightness control
+beta = args.value # Simple brightness control
 """
 # Initialize values
 print(' Basic Linear Transforms ')
