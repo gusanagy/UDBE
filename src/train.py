@@ -1,4 +1,10 @@
 
+import sys
+import os
+
+# Adiciona o diretório pai ao sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -36,6 +42,7 @@ from tqdm import tqdm
 import wandb
 import random
 from src.split_data import check_alpha_channel, load_image_paths
+
 
 
 class load_data(data.Dataset):
@@ -350,6 +357,7 @@ def train(config: Dict):
                 torch.save(net_model.state_dict(), os.path.join(
                     ckpt_savedir, 'ckpt_' + str(e) + "_.pt"))
             ##TEST FUNCTION
+            
 
         # if e % 50==0:
         #     avg_psnr,avg_ssim=Test(config,e)
@@ -360,14 +368,19 @@ def train(config: Dict):
 
 
 def Test(config: Dict,epoch):
+
+    ###load the data
+    datapath_test = load_image_paths(config.dataset_path,config.dataset)[1]
+
     # load model and evaluate
     device = config.device_list[0]
-    test_low_path=config.dataset_path+r'*.png'    
-    test_high_path=config.dataset_path+r'*.png' 
+    # test_low_path=config.dataset_path+r'*.png'    
+    # test_high_path=config.dataset_path+r'*.png' 
 
-    datapath_test_low = glob.glob( test_low_path)
-    datapath_test_high = glob.glob(test_high_path)
-    dataload_test = load_data_test(datapath_test_low,datapath_test_high)
+    # datapath_test_low = glob.glob( test_low_path)
+    # datapath_test_high = glob.glob(test_high_path)
+
+    dataload_test = load_data_test(datapath_test,datapath_test)
     dataloader = DataLoader(dataload_test, batch_size=1, num_workers=4,
                             drop_last=True, pin_memory=True)
 
@@ -391,6 +404,8 @@ def Test(config: Dict,epoch):
     psnr_list = []
     ssim_list = []
     lpips_list=[]
+    ucim = []
+    uqim =[]
 
 
     model.eval()
@@ -509,7 +524,7 @@ if __name__== "__main__" :
         "img_size": 32,
         "grad_clip": 1.,
         "device": "cuda", #MODIFIQUEI
-        "device_list": [0, 1],
+        "device_list": [0],
         #"device_list": [3,2,1,0],
         
         "ddim":True,
@@ -518,8 +533,8 @@ if __name__== "__main__" :
     }
 
 
-    parser.add_argument('--dataset_path', type=str, default="./data/UWData2k2/")
-    parser.add_argument('--dataset', type=str, default="./data/UDWdata/")
+    parser.add_argument('--dataset_path', type=str, default="./data/UDWdata/")
+    parser.add_argument('--dataset', type=str, default="all") # RUIE, UIEB, SUIM
     parser.add_argument('--state', type=str, default="train")  #or eval
     parser.add_argument('--pretrained_path', type=str, default=None)  #or eval ajustar pastas para salvar os conteudos
     parser.add_argument('--output_path', type=str, default="./output/")  #or eval
@@ -539,6 +554,6 @@ if __name__== "__main__" :
     for key, value in modelConfig.items():
         setattr(config, key, value)
     print(config)
-    #train(config)
+    train(config)
     # wandb.finish()
     #Test_for_one(modelConfig,epoch=14000)

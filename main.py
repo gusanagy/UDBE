@@ -26,7 +26,7 @@ if __name__== "__main__" :
         "img_size": 32,
         "grad_clip": 1.,
         "device": "cuda", #MODIFIQUEI
-        "device_list": [0, 1],
+        "device_list": [0],#[0, 1]
         #"device_list": [3,2,1,0],
         
         "ddim":True,
@@ -35,23 +35,24 @@ if __name__== "__main__" :
     }
 
     ##Adicionar ao arg parse o transfer learning manual para o mask diffusion
+    parser.add_argument('--dataset', type=str, default="all")
     parser.add_argument('--model', type=str, default="standart")#mask is the second option
-    parser.add_argument('--dataset_path', type=str, default="./data/UWData2k2/")
+    parser.add_argument('--dataset_path', type=str, default="./data/UDWdata/")
     parser.add_argument('--state', type=str, default="train")  #or eval
     parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
     parser.add_argument('--output_path', type=str, default="./output/")  #or eval
 
     config = parser.parse_args()
     
-    wandb.init(
-            project="CLEDiffusion",
-            config=vars(config),
-            name="Treino e Teste Diffusao sem mascaras",
-            tags=["Train","No mask"],
-            group="diffusion_train",
-            job_type="train",
+    # wandb.init(
+    #         project="CLEDiffusion",
+    #         config=vars(config),
+    #         name="Treino e Teste Diffusao sem mascaras",
+    #         tags=["Train","No mask"],
+    #         group="glown_diffusion_train",
+    #         job_type="train",
 
-        )
+    #     )
     
     for key, value in modelConfig.items():
         setattr(config, key, value)
@@ -60,7 +61,7 @@ if __name__== "__main__" :
 
     train(config)#importar a funcao ou classe de papeline de treinamento== treino/teste e carregar as configs e rodar
 
-    wandb.finish()
+    # wandb.finish()
 
     
 #start trainig papeline
