@@ -1,3 +1,9 @@
+import sys
+import os
+
+# Adiciona o diretório pai ao sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from loss import Myloss
 from typing import Dict
 from tensorboardX import SummaryWriter
 import cv2
@@ -8,7 +14,7 @@ import torch.nn.functional as F
 #from matplotlib.animation import FuncAnimation
 #import matplotlib.pyplot as plt
 #import matplotlib.animation as animation
-from loss import Myloss
+from loss import Myloss,lab_Loss,lch_Loss
 from kornia.losses import ssim_loss
 import numpy as np
 import lpips
@@ -26,7 +32,7 @@ def extract(v, t, x_shape):
 
 
 class GaussianDiffusionTrainer(nn.Module):
-    def __init__(self, model, beta_1, beta_T, T,Pre_train=None):
+    def __init__(self, model, beta_1, beta_T, T,Pre_train=None, perceptual='vgg'):
         super().__init__()
 
         self.model = model
@@ -42,12 +48,24 @@ class GaussianDiffusionTrainer(nn.Module):
             'sqrt_alphas_bar', torch.sqrt(alphas_bar))
         self.register_buffer(
             'sqrt_one_minus_alphas_bar', torch.sqrt(1. - alphas_bar))
-
+        ###Losses
         self.L_color=None
         self.num=0
-        self.loss_fn_vgg = lpips.LPIPS(net='vgg')#a vgg vem do lpips entao
-
-
+        ###Necessita de avaliacao perceptual
+        if perceptual == 'vgg':
+            self.loss_perceptual = lpips.LPIPS(net='vgg')#a vgg vem do lpips entao
+        elif perceptual == 'squeeze':
+            self.loss_perceptual = Myloss.LPIPS(net='squeeze')
+        elif perceptual == 'alex':
+            self.loss_perceptual = Myloss.LPIPS(net='alex')
+        self.Jdarkloss = Myloss.DarkChannelPriorLoss(patch_size=5)
+        self.light_loss = Myloss.light_loss()
+        self.color_loss = Myloss.color_loss()
+        self.L_color = Myloss.L_color()
+        self.L1loss = Myloss.L1Loss()
+        #self.L_exp = Myloss.L_exp(patch_size=5)
+        self.lab_loss = lab_Loss()
+        self.lch_loss = lch_Loss()
 
     def forward(self, gt_images, lowlight_image, data_concate,epoch,brighness_leve_high=None):
         """
@@ -72,10 +90,16 @@ class GaussianDiffusionTrainer(nn.Module):
             noise_pred = self.model(input, t, light_high,context_zero=True)
         else:
             noise_pred = self.model(input, t, light_high)
+        
+        ##########
+        ###LOSS###
+        ##########
+
+        #Weights 
+        #Epochs
+        #losses
 
 
-
-        # los
         loss = 0
         mse_loss = F.mse_loss(noise_pred, noise, reduction='none')
         loss += mse_loss
@@ -90,29 +114,68 @@ class GaussianDiffusionTrainer(nn.Module):
         col_loss_weight=100
         if epoch<20:
             col_loss_weight=0
-        col_loss = Myloss.color_loss(y_0_pred, gt_images) * col_loss_weight
+        col_loss = self.color_loss(y_0_pred, gt_images) * col_loss_weight
         loss+=col_loss
 
         exposure_loss=0
         exposure_loss_weight=20
         if epoch<20:
             exposure_loss_weight=0
-        exposure_loss = Myloss.light_loss(y_0_pred, gt_images) * exposure_loss_weight
+        exposure_loss = self.light_loss(y_0_pred, gt_images) * exposure_loss_weight
         loss+=exposure_loss
 
-        ssimLoss = ssim_loss(y_0_pred, gt_images, window_size=11)
-        ssimLoss*=2.83
+        ssimLoss=0
+        ssim_weight = 2.83
+        ssimLoss = ssim_loss(y_0_pred, gt_images, window_size=11) * ssim_weight
         loss+=ssimLoss
-        #ssimLoss=0
-
-        vgg_loss=0
-        vgg_loss_wight=50
+        #ssimLoss*=2.83
+        
+        perceptual_loss=0
+        perceptual_loss_weight=50
+        if epoch < 20:
+            perceptual_loss = 0
         # print('y_0_pred:',  y_0_pred.dtype)
         # print('gt_images:',  gt_images.dtype)
-        vgg_loss = self.loss_fn_vgg(gt_images, y_0_pred)*vgg_loss_wight
-        loss+=vgg_loss
+        perceptual_loss = self.loss_perceptual(gt_images, y_0_pred)*perceptual_loss_weight
+        loss+=perceptual_loss
 
-        return [loss, mse_loss, col_loss, exposure_loss,ssimLoss,vgg_loss]
+        L1loss = 0
+        L1loss_weight = 0
+        if epoch < 20:
+            L1loss_weight = 0
+        L1loss = self.L1loss(gt_images, y_0_pred)*L1loss_weight
+        
+        jdark_weight = 0
+        jdark = 0
+        if epoch < 20:
+            jdark_weight = 0
+        jdark = self.Jdarkloss(y_0_pred) * jdark_weight
+        loss+=jdark
+
+        lchLoss = 0
+        lch_weight =0
+        if epoch < 20:
+            lch_weight = 0
+        lchLoss = self.lch_loss(y_0_pred, gt_images) * lch_weight
+        loss+=lchLoss
+
+        labLoss = 0
+        lab_weight =0
+        if epoch < 20:
+            lab_weight = 0
+        labLoss = self.lab_loss(y_0_pred, gt_images)  * lab_weight
+        loss+=labLoss
+
+        L_color = 0
+        lcolor_weight = 0
+        if epoch < 20:
+            lcolor_weight = 0
+        L_color = self.L_color(y_0_pred) * lcolor_weight
+        loss+=L_color
+
+        #loss = loss + mse_loss + exposure_loss + col_loss + ssim_loss + perceptual_loss + L1loss + lchLoss + labLoss + jdark + L_color
+            #[loss, mse_loss, col_loss, exposure_loss, ssimLoss,perceptual_loss,]
+        return [loss, mse_loss, col_loss, exposure_loss, ssimLoss, perceptual_loss, L1loss,jdark, lchLoss, labLoss, L_color]
 
     # def forward(self, gt_images,lowlight_image,snr_map):
     #     """

@@ -4,6 +4,7 @@ import os
 
 # Adiciona o diretório pai ao sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from loss import Myloss
 
 import torch
 import torch.distributed as dist
@@ -21,7 +22,6 @@ from Diffusion import GaussianDiffusionSampler, GaussianDiffusionTrainer
 from Diffusion.Model import UNet
 from .Scheduler import GradualWarmupScheduler
 from .tool_func import *
-from loss import Myloss
 from tensorboardX import SummaryWriter #provavelmente irei retirar o suporte a tensorboard
 from skimage.metrics import peak_signal_noise_ratio as PSNR
 from skimage.metrics import structural_similarity as SSIM    
@@ -53,7 +53,7 @@ class load_data(data.Dataset):
         self.transform=A.Compose(
             [
                 A.Resize (height=256, width=256),
-                A.RandomCrop(height=128, width=128),
+                #A.RandomCrop(height=128, width=128),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
                 ToTensorV2(),
@@ -296,11 +296,12 @@ def train(config: Dict):
                 data_concate=torch.cat([data_color, snr_map], dim=1)
                 optimizer.zero_grad()
 
-                [loss, mse_loss, col_loss,exp_loss,ssim_loss,vgg_loss] = trainer(data_high, data_low,data_concate,e)
+                [loss, mse_loss, col_loss, exposure_loss, ssimLoss, vgg_loss, L1loss, DarkChannelloss, lchLoss, labLoss, L_color] = trainer(data_high, data_low,data_concate,e)
+                #[loss, mse_loss, col_loss,exp_loss,ssim_loss,vgg_loss] = trainer(data_high, data_low,data_concate,e)
                 ###calcula a media das funcoes de perda apos os passos do sampler
                 loss = loss.mean()
                 mse_loss = mse_loss.mean()
-                ssim_loss=ssim_loss.mean()
+                ssim_loss= ssim_loss.mean()
                 vgg_loss = vgg_loss.mean()
 
                 loss.backward()

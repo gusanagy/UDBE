@@ -25,11 +25,11 @@ import torch.nn.functional as F
 #     loss=F.l1_loss(output,gt)
 #     return loss
 
-###############################################3
+###############################################
 
-class color_loss2(nn.Module):
+class color_loss(nn.Module):
     def __init__(self):
-        super(color_loss2, self).__init__()
+        super(color_loss, self).__init__()
     
     def forward(self, output, gt,mask=None):
         img_ref = F.normalize(output, p = 2, dim = 1)
@@ -41,9 +41,9 @@ class color_loss2(nn.Module):
         # loss_cos = self.mse(img_ref, ref_p)
         return loss_cos
 
-class light_loss2(nn.Module):
+class light_loss(nn.Module):
     def __init__(self):
-        super(light_loss2, self).__init__()
+        super(light_loss, self).__init__()
 
     def forward(self,output,gt,mask=None):
         #output = torch.mean(output, 1, keepdim=True)
