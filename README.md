@@ -34,6 +34,9 @@ Institutions:
 
 Este dataset é organizado para facilitar o treinamento e a validação de modelos de aprendizado de máquina. As imagens estão divididas em conjuntos de treino (`train`) e validação (`val`) para cada categoria específica. Certifique-se de utilizar as imagens dos diretórios correspondentes conforme necessário para seus experimentos.
 
+link para o dataset utilizado UWDdata. Crie a pasta data, extraia o dataset. Mova a pasta UWData para o diretorio data. Teste o codigo com o dataset utilizando a flag dataset para selecionar o desejado ou utilizando todos nao setando esse parametro. 
+[UWData Download](https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing)
+
 
 # Checkpoint
 

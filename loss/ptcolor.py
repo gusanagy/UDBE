@@ -37,7 +37,8 @@ def _t(data):
 
 # Helper for color matrix multiplication
 def _mul(coeffs, image):
-    coeffs = coeffs.to(image.device).view(3, 3, 1, 1)
+    #coeffs = coeffs.to(image.device).view(3, 3, 1, 1)
+    coeffs = coeffs.to(image.device).type_as(image).view(3, 3, 1, 1)
     return torch.nn.functional.conv2d(image, coeffs)
 
 
