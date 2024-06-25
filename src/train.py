@@ -79,13 +79,15 @@ class load_data(data.Dataset):
         data_low = self.transform(image=data_low)["image"]
         #mean and var of lol training dataset. If you change dataset, please change mean and var.
         ##RGB normalization
-        mean=torch.tensor([0.2255, 0.4897, 0.4174])
-        var=torch.tensor([0.0259, 0.0338, 0.0383])
+        #mean=torch.tensor([0.2255, 0.4897, 0.4174])
+        #var=torch.tensor([0.0259, 0.0338, 0.0383])
+        mean=torch.tensor([0.4350, 0.4445, 0.4086])
+        var=torch.tensor([0.0193, 0.0134, 0.0199])
         ##BGR normalization
         #mean=torch.tensor([0.4174, 0.4897, 0.2255])
         #var=torch.tensor([0.0383, 0.0338, 0.0259])
         data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
-        data_low=data_low/20#20
+        data_low=data_low/30#20
 
         data_max_r=data_low[0].max()
         data_max_g = data_low[1].max()
@@ -145,10 +147,12 @@ class load_data_test(data.Dataset):
 
         # Transformação e normalização
         data_low = self.transform(image=data_low)["image"]
-        # mean=torch.tensor([0.4350, 0.4445, 0.4086])
-        # var=torch.tensor([0.0193, 0.0134, 0.0199])
-        mean=torch.tensor([0.2255, 0.4897, 0.4174])
-        var=torch.tensor([0.0259, 0.0338, 0.0383])
+        mean=torch.tensor([0.4350, 0.4445, 0.4086])
+        var=torch.tensor([0.0193, 0.0134, 0.0199])
+        #mean = torch.tensor([0.4174, 0.4897, 0.2255])
+        #var = torch.tensor([0.0383, 0.0338, 0.0259])
+        #mean=torch.tensor([0.2255, 0.4897, 0.4174])
+        #var=torch.tensor([0.0259, 0.0338, 0.0383])
         data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
         data_low=data_low/20
 
@@ -296,7 +300,7 @@ def train(config: Dict):
                 data_concate=torch.cat([data_color, snr_map], dim=1)
                 optimizer.zero_grad()
 
-                [loss, mse_loss, col_loss, exposure_loss, ssimLoss, vgg_loss, L1loss, DarkChannelloss, lchLoss, labLoss, L_color] = trainer(data_high, data_low,data_concate,e)
+                [loss, mse_loss, col_loss, exp_loss, ssim_loss, vgg_loss, L1loss, DarkChannelloss, lchLoss, labLoss, L_color] = trainer(data_high, data_low,data_concate,e)
                 #[loss, mse_loss, col_loss,exp_loss,ssim_loss,vgg_loss] = trainer(data_high, data_low,data_concate,e)
                 ###calcula a media das funcoes de perda apos os passos do sampler
                 loss = loss.mean()
