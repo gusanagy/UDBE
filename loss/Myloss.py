@@ -58,7 +58,7 @@ class light_loss(nn.Module):
 
 ##############################################3
 
-
+#NAO SEI O QUE FAZ
 class L_color(nn.Module):
 
     def __init__(self):
