@@ -44,15 +44,15 @@ if __name__== "__main__" :
 
     config = parser.parse_args()
     
-    # wandb.init(
-    #         project="CLEDiffusion",
-    #         config=vars(config),
-    #         name="Treino e Teste Diffusao sem mascaras",
-    #         tags=["Train","No mask"],
-    #         group="glown_diffusion_train",
-    #         job_type="train",
+    wandb.init(
+             project="CLEDiffusion",
+             config=vars(config),
+             name="Treino e Teste Diffusao sem mascaras GlowDiff",
+             tags=["Train","No mask", "GlowDiff"],
+             group="glown_diffusion_train",
+             job_type="train",
 
-    #     )
+         )
     
     for key, value in modelConfig.items():
         setattr(config, key, value)
@@ -61,7 +61,7 @@ if __name__== "__main__" :
 
     train(config)#importar a funcao ou classe de papeline de treinamento== treino/teste e carregar as configs e rodar
 
-    # wandb.finish()
+    wandb.finish()
 
     
 #start trainig papeline

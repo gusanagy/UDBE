@@ -24,7 +24,8 @@ from .Scheduler import GradualWarmupScheduler
 from .tool_func import *
 from tensorboardX import SummaryWriter #provavelmente irei retirar o suporte a tensorboard
 from skimage.metrics import peak_signal_noise_ratio as PSNR
-from skimage.metrics import structural_similarity as SSIM    
+from skimage.metrics import structural_similarity as SSIM 
+from Metrics.metrics import nmetrics
 import numpy as np
 import glob
 import random
@@ -300,20 +301,21 @@ def train(config: Dict):
                 data_concate=torch.cat([data_color, snr_map], dim=1)
                 optimizer.zero_grad()
 
-                [loss, mse_loss, col_loss, exp_loss, ssim_loss, vgg_loss, L1loss, DarkChannelloss, lchLoss, labLoss, L_color] = trainer(data_high, data_low,data_concate,e)
+                [loss, mse_loss, col_loss, exp_loss, ssim_loss, perceptual_loss, L1loss] = trainer(data_high, data_low,data_concate,e)
                 #[loss, mse_loss, col_loss,exp_loss,ssim_loss,vgg_loss] = trainer(data_high, data_low,data_concate,e)
                 ###calcula a media das funcoes de perda apos os passos do sampler
                 loss = loss.mean()
                 mse_loss = mse_loss.mean()
                 ssim_loss= ssim_loss.mean()
-                vgg_loss = vgg_loss.mean()
+                perceptual_loss = perceptual_loss.mean()
+                L1loss = L1loss.mean()
 
                 loss.backward()
 
                 torch.nn.utils.clip_grad_norm_(
                     net_model.parameters(), config.grad_clip)
                 optimizer.step()
-                ###3ntender esta linha
+                ###Entender esta linha
                 tqdmDataLoader.set_postfix(ordered_dict={
                     "epoch": e,
                     "loss: ": loss.item(),
@@ -321,7 +323,8 @@ def train(config: Dict):
                     "exp_loss":exp_loss.item(),
                     "col_loss":col_loss.item(),
                     'ssim_loss':ssim_loss.item(),
-                    'vgg_loss':vgg_loss.item(),
+                    'perceptual_loss':perceptual_loss.item(),
+                    "L1Loss": L1loss.item(),
                     "LR": optimizer.state_dict()['param_groups'][0]["lr"],
                     "num":num+1
                 })
@@ -330,7 +333,8 @@ def train(config: Dict):
                 exp_num=exp_loss.item()
                 col_num=col_loss.item()
                 ssim_num = ssim_loss.item()
-                vgg_num=vgg_loss.item()
+                perceptual_num=perceptual_loss.item()
+                L1_num = L1loss.item()
                 # writer.add_scalars('loss', {"loss_total":loss_num,
                 #                              "mse_loss":mse_num,
                 #                              "exp_loss":exp_num,
@@ -346,14 +350,15 @@ def train(config: Dict):
                     "EXP Loss":exp_num,
                     "COL Loss":col_num,
                     'SSIM Loss':ssim_num,
-                    'VGG Loss':vgg_num,
+                    'perceptual Loss':perceptual_num,
+                    'L1Loss':L1_num
                 }})
                 num+=1
                 #Adicionar uma flag do wandb para acompanhar a loss// adaptar o summary writer do tensor board
 
         warmUpScheduler.step()
       
-        if e % 400 == 0:
+        if e % 250 == 0:
             if config.DDP == True:
                 if dist.get_rank() == 0:
                     torch.save(net_model.state_dict(), os.path.join(
@@ -364,12 +369,13 @@ def train(config: Dict):
             ##TEST FUNCTION
             
 
-        # if e % 50==0:
-        #     avg_psnr,avg_ssim=Test(config,e)
-        #     write_data = 'epoch: {}  psnr: {:.4f} ssim: {:.4f}\n'.format(e, avg_psnr,avg_ssim)
-        #     f = open(save_txt, 'a+')
-        #     f.write(write_data)
-        #     f.close()
+        if e % 250==0:
+            Test(config,e)
+            #avg_psnr,avg_ssim=Test(config,e)
+            #write_data = 'epoch: {}  psnr: {:.4f} ssim: {:.4f}\n'.format(e, avg_psnr,avg_ssim)
+            #f = open(save_txt, 'a+')
+            #f.write(write_data)
+            #f.close()
 
 
 def Test(config: Dict,epoch):
@@ -408,15 +414,16 @@ def Test(config: Dict,epoch):
     image_num = 0
     psnr_list = []
     ssim_list = []
-    lpips_list=[]
-    ucim = []
-    uqim =[]
+    #lpips_list=[]
+    uciqe_list = []
+    uiqm_list =[]
+    test_imgs = []
 
 
     model.eval()
     sampler = GaussianDiffusionSampler(
         model, config.beta_1, config.beta_T, config.T).to(device)
-    loss_fn_vgg=lpips.LPIPS(net='vgg')
+    #loss_fn_vgg=lpips.LPIPS(net='vgg')
 
     with torch.no_grad():
         with tqdm( dataloader, dynamic_ncols=True) as tqdmDataLoader:
@@ -457,15 +464,24 @@ def Test(config: Dict,epoch):
                     res_gray = rgb2gray(res_Imgs)
                     gt_gray = rgb2gray(gt_img)
 
-                    ssim_score = SSIM(res_gray, gt_gray, multichannel=True,data_range=1)
+                    ssim_score = SSIM(res_gray, gt_gray, multichannel=True,data_range=1)\
+                    
+                    #UIQM e UCIQE
+                    uiqm,uciqe = nmetrics(res_Imgs)
+                   
                     res_Imgs = (res_Imgs * 255)
                     gt_img = (gt_img * 255)
                     low_img = (low_img * 255)
                     
                     psnr_list.append(psnr)
                     ssim_list.append(ssim_score)
+                    uiqm_list.apend(uiqm)
+                    uciqe_list.append(uciqe)
+                    test_imgs.append({"Imagem de baixa luminosidade": [wandb.Image(low_img, caption="Low Light Image")], "Imagem de Alta luminosidade":[wandb.Image(gt_image, caption="High LightImage")],"Imagem gerada pela rede": [wandb.Image(res_Imgs, caption="Restored Image")]})
+
+
                     # Colocar flag no wandb para as variaveis psnr ssim
-                    print('psnr:', psnr, '  ssim:', ssim_score)
+                    #print('psnr:', psnr, '  ssim:', ssim_score)
 
                     # show result
                     # output = np.concatenate([low_img, gt_img, res_Imgs], axis=1) / 255
@@ -482,17 +498,23 @@ def Test(config: Dict,epoch):
   
                 avg_psnr = sum(psnr_list) / len(psnr_list)
                 avg_ssim = sum(ssim_list) / len(ssim_list)
+                avg_uiqm = sum(uiqm_list) / len(uiqm_list)
+                avg_uciqe = sum(uciqe_list) / len(uciqe_list)
 
                 # Wandb logs 
                 wandb.log({"Test":{
                     "Average PSNR": avg_psnr,
                     "Average SSIM": avg_ssim,
+                    "Average UIQM": avg_uiqm,
+                    "Average UCIQE": avg_uciqe,
                     "PSNR": psnr,
                     "SSIM": ssim_score,
-                    "epoch": epoch}})
+                    "Test from epoch": epoch},
+                    "Image Test":test_imgs})
 
-                print('psnr_orgin_avg:', avg_psnr)
-                print('ssim_orgin_avg:', avg_ssim)
+                #print('psnr_orgin_avg:', avg_psnr)
+                #print('ssim_orgin_avg:', avg_ssim)
+                print(f"Test From epoch {epoch} DONE")
 
                 # f = open(save_txt_name, 'w+')
                 # f.write('\npsnr_orgin :')
@@ -506,7 +528,7 @@ def Test(config: Dict,epoch):
                 # f.write(str(avg_ssim))
                 # f.close()
 
-                return avg_psnr,avg_ssim
+                #return avg_psnr,avg_ssim
 
 if __name__== "__main__" :
     parser = argparse.ArgumentParser()
