@@ -55,9 +55,9 @@ class GaussianDiffusionTrainer(nn.Module):
         if perceptual == 'vgg':
             self.loss_perceptual = lpips.LPIPS(net='vgg')#a vgg vem do lpips entao
         elif perceptual == 'squeeze':
-            self.loss_perceptual = Myloss.LPIPS(net='squeeze')
+            self.loss_perceptual = lpips.LPIPS(net='squeeze')
         elif perceptual == 'alex':
-            self.loss_perceptual = Myloss.LPIPS(net='alex')
+            self.loss_perceptual = lpips.LPIPS(net='alex')
         
         self.light_loss = Myloss.light_loss()
         self.color_loss = Myloss.color_loss()

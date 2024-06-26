@@ -277,7 +277,7 @@ def train(config: Dict):
     warmUpScheduler = GradualWarmupScheduler(
         optimizer=optimizer, multiplier=config.multiplier, warm_epoch=config.epoch // 10, after_scheduler=cosineScheduler)
     trainer = GaussianDiffusionTrainer(
-        net_model, config.beta_1, config.beta_T, config.T,).to(device)
+        net_model, config.beta_1, config.beta_T, config.T,perceptual='alex',).to(device)
 
 
     log_savedir=config.output_path+'/logs/'
@@ -375,7 +375,7 @@ def train(config: Dict):
             ##TEST FUNCTION
             
 
-        if e % 250==0:
+        if e % 250==0 and  e > 10:
             Test(config,e)
             #avg_psnr,avg_ssim=Test(config,e)
             #write_data = 'epoch: {}  psnr: {:.4f} ssim: {:.4f}\n'.format(e, avg_psnr,avg_ssim)
@@ -481,7 +481,7 @@ def Test(config: Dict,epoch):
                     
                     psnr_list.append(psnr)
                     ssim_list.append(ssim_score)
-                    uiqm_list.apend(uiqm)
+                    uiqm_list.append(uiqm)
                     uciqe_list.append(uciqe)
                     test_imgs.append({"Imagem de baixa luminosidade": [wandb.Image(low_img, caption="Low Light Image")], "Imagem de Alta luminosidade":[wandb.Image(gt_image, caption="High LightImage")],"Imagem gerada pela rede": [wandb.Image(res_Imgs, caption="Restored Image")]})
 

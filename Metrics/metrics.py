@@ -24,9 +24,12 @@ def nmetrics(a):
     lab = color.rgb2lab(a)
     gray = color.rgb2gray(a)
     # UCIQE
-    c1 = 0.4680
-    c2 = 0.2745
-    c3 = 0.2576
+    # c1 = 0.4680
+    # c2 = 0.2745
+    # c3 = 0.2576
+    c1 = 0.2745 # (menos peso, pois o brilho pode afetar a precisão da medição da cromaticidade)
+    c2 = 0.3742 # (maior peso, pois a saturação é importante para imagens com brilho)
+    c3 = 0.3743 # (maior peso, pois o contraste de luminância é crucial para imagens com brilho)
     l = lab[:,:,0]
 
     #1st term
@@ -55,9 +58,12 @@ def nmetrics(a):
     uciqe = c1 * sc + c2 * conl + c3 * us
 
     # UIQM
-    p1 = 0.0282
-    p2 = 0.2953
-    p3 = 3.5753
+    # p1 = 0.0282
+    # p2 = 0.2953
+    # p3 = 3.5753
+    p1 = 0.2907 # (menos peso, pois o brilho pode afetar a precisão da medição da cor)
+    p2 = 0.5155 # (maior peso, pois a nitidez é crucial para imagens com brilho)
+    p3 = 0.1938 # (peso moderado para o contraste)
 
     #1st term UICM
     rg = rgb[:,:,0] - rgb[:,:,1]
