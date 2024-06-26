@@ -125,6 +125,7 @@ class load_data_test(data.Dataset):
         print("Total test-training examples:", len(self.input_data_high))
         self.transform=A.Compose(
             [
+                A.Resize (height=256, width=256),
                 ToTensorV2(),
             ]
         )
@@ -137,6 +138,8 @@ class load_data_test(data.Dataset):
         seed = torch.random.seed()
 
         data_low = cv2.imread(self.input_data_low[idx])
+
+        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-75) #modificação para ajuste automatico de brilho para datalow
 
         ### Processamento das imagens // Avaliar aplicação // funcionalizar
         # Conversão de canais de cor e normalização
@@ -172,6 +175,9 @@ class load_data_test(data.Dataset):
 
         # Processamento da imagem de alta luminosidade
         data_high = cv2.imread(self.input_data_high[idx])
+
+        data_high= cv2.convertScaleAbs(data_high, alpha=1.0, beta=50)
+
         data_high=data_high[:,:,::-1].copy()
         #data_high = Image.fromarray(data_high)
         random.seed(1)
