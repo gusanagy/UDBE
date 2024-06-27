@@ -307,14 +307,14 @@ def train(config: Dict):
                 data_concate=torch.cat([data_color, snr_map], dim=1)
                 optimizer.zero_grad()
 
-                [loss, mse_loss, col_loss, exp_loss, ssim_loss, perceptual_loss, L1loss] = trainer(data_high, data_low,data_concate,e)
+                [loss, mse_loss, col_loss, exp_loss, ssim_loss, perceptual_loss] = trainer(data_high, data_low,data_concate,e)
                 #[loss, mse_loss, col_loss,exp_loss,ssim_loss,vgg_loss] = trainer(data_high, data_low,data_concate,e)
                 ###calcula a media das funcoes de perda apos os passos do sampler
                 loss = loss.mean()
                 mse_loss = mse_loss.mean()
                 ssim_loss= ssim_loss.mean()
                 perceptual_loss = perceptual_loss.mean()
-                L1loss = L1loss.mean()
+                
 
                 loss.backward()
 
@@ -326,11 +326,10 @@ def train(config: Dict):
                     "epoch": e,
                     "loss: ": loss.item(),
                     "mse_loss":mse_loss.item(),
-                    "exp_loss":exp_loss.item(),
+                    "Brithness_loss":exp_loss.item(),
                     "col_loss":col_loss.item(),
                     'ssim_loss':ssim_loss.item(),
                     'perceptual_loss':perceptual_loss.item(),
-                    "L1Loss": L1loss.item(),
                     "LR": optimizer.state_dict()['param_groups'][0]["lr"],
                     "num":num+1
                 })
@@ -340,7 +339,7 @@ def train(config: Dict):
                 col_num=col_loss.item()
                 ssim_num = ssim_loss.item()
                 perceptual_num=perceptual_loss.item()
-                L1_num = L1loss.item()
+                #L1_num = L1loss.item()
                 # writer.add_scalars('loss', {"loss_total":loss_num,
                 #                              "mse_loss":mse_num,
                 #                              "exp_loss":exp_num,
@@ -353,18 +352,17 @@ def train(config: Dict):
                     "epoch": e,
                     "Loss: ": loss_num,
                     "MSE Loss":mse_num,
-                    "EXP Loss":exp_num,
+                    "Brithness_loss":exp_num,
                     "COL Loss":col_num,
                     'SSIM Loss':ssim_num,
                     'perceptual Loss':perceptual_num,
-                    'L1Loss':L1_num
-                }})
+                    }})
                 num+=1
                 #Adicionar uma flag do wandb para acompanhar a loss// adaptar o summary writer do tensor board
 
         warmUpScheduler.step()
       
-        if e % 250 == 0:
+        if e % 200 == 0:
             if config.DDP == True:
                 if dist.get_rank() == 0:
                     torch.save(net_model.state_dict(), os.path.join(
@@ -375,8 +373,8 @@ def train(config: Dict):
             ##TEST FUNCTION
             
 
-        if e % 250==0 and  e > 10:
-            Test(config,e)
+        # if e % 200==0 and  e > 10:
+        #     Test(config,e)
             #avg_psnr,avg_ssim=Test(config,e)
             #write_data = 'epoch: {}  psnr: {:.4f} ssim: {:.4f}\n'.format(e, avg_psnr,avg_ssim)
             #f = open(save_txt, 'a+')
@@ -423,7 +421,10 @@ def Test(config: Dict,epoch):
     #lpips_list=[]
     uciqe_list = []
     uiqm_list =[]
-    test_imgs = []
+    test_get = []
+    test_low = []
+    test_get = []
+    test_res = []
 
 
     model.eval()
@@ -483,8 +484,9 @@ def Test(config: Dict,epoch):
                     ssim_list.append(ssim_score)
                     uiqm_list.append(uiqm)
                     uciqe_list.append(uciqe)
-                    test_imgs.append({"Imagem de baixa luminosidade": [wandb.Image(low_img, caption="Low Light Image")], "Imagem de Alta luminosidade":[wandb.Image(gt_image, caption="High LightImage")],"Imagem gerada pela rede": [wandb.Image(res_Imgs, caption="Restored Image")]})
-
+                    """ test_res.append({"Imagem gerada pela rede": [wandb.Image(res_Imgs, caption="Restored Image")]})
+                    test_low.append({"Imagem de baixa luminosidade": [wandb.Image(low_img, caption="Low Light Image")]})
+                    test_res.append({"Imagem de Alta luminosidade":[wandb.Image(gt_image, caption="High LightImage")]}) """
 
                     # Colocar flag no wandb para as variaveis psnr ssim
                     #print('psnr:', psnr, '  ssim:', ssim_score)
@@ -515,8 +517,9 @@ def Test(config: Dict,epoch):
                     "Average UCIQE": avg_uciqe,
                     "PSNR": psnr,
                     "SSIM": ssim_score,
-                    "Test from epoch": epoch},
-                    "Image Test":test_imgs})
+                    "Test from epoch": epoch#,
+                    #"Image Test":test_imgs
+                    }})
 
                 #print('psnr_orgin_avg:', avg_psnr)
                 #print('ssim_orgin_avg:', avg_ssim)
