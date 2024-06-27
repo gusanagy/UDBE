@@ -64,7 +64,7 @@ def check_alpha_channel(image_path):
 
 
 
-def load_image_paths(dataset_path, dataset="all",task="train"):
+def load_image_paths(dataset_path, dataset="all",task="train",split=False):
     """
     dataset_path: endereço do dataset raiz
     dataset: "all", "UIEB", "RUIE", "SUIM"
@@ -99,10 +99,12 @@ def load_image_paths(dataset_path, dataset="all",task="train"):
     
     # Embaralha os caminhos das imagens
     random.shuffle(image_paths)
-
-    # Divide os dados em 80% para treino e 20% para teste
-    split_index = int(len(image_paths) * 0.8)
-    train_paths = image_paths[:split_index]
-    test_paths = image_paths[split_index:]
-    
-    return train_paths, test_paths
+    if split == True:
+        # Divide os dados em 80% para treino e 20% para teste
+        split_index = int(len(image_paths) * 0.8)
+        train_paths = image_paths[:split_index]
+        test_paths = image_paths[split_index:]
+        
+        return train_paths, test_paths
+    else:
+        return image_paths

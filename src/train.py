@@ -242,7 +242,7 @@ def train(config: Dict):
         device = torch.device("cuda", local_rank)
     
     ###load the data
-    datapath_train = load_image_paths(config.dataset_path,config.dataset)[0]
+    datapath_train = load_image_paths(config.dataset_path,config.dataset)
     dataload_train=load_data(datapath_train, datapath_train)
 
     ###Modificar aqui a forma como sao carregados os parametros
@@ -385,7 +385,7 @@ def train(config: Dict):
 def Test(config: Dict,epoch):
 
     ###load the data
-    datapath_test = load_image_paths(config.dataset_path,config.dataset)[1]
+    datapath_test = load_image_paths(config.dataset_path,config.dataset,split=True)[1]
 
     # load model and evaluate
     device = config.device_list[0]
