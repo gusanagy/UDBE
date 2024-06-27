@@ -62,7 +62,7 @@ class GaussianDiffusionTrainer(nn.Module):
         self.light_loss = Myloss.light_loss()
         self.color_loss = Myloss.color_loss()
         self.L_color = Myloss.L_color()
-        self.L1loss = Myloss.L1Loss()
+        #self.L1loss = Myloss.L1Loss()
         #self.L_exp = Myloss.L_exp(patch_size=5)
         #self.lab_loss = lab_Loss()
         #self.lch_loss = lch_Loss()
@@ -132,20 +132,20 @@ class GaussianDiffusionTrainer(nn.Module):
         #ssimLoss*=2.83
         
         perceptual_loss=0
-        perceptual_loss_weight=50
+        perceptual_loss_weight=30
         #if epoch < 0:
         #    perceptual_loss = 0
         # print('y_0_pred:',  y_0_pred.dtype)
         # print('gt_images:',  gt_images.dtype)
         perceptual_loss = self.loss_perceptual(gt_images, y_0_pred)*perceptual_loss_weight
         loss+=perceptual_loss
-
+        """
         L1loss = 0
         L1loss_weight = 20
         if epoch < second_start:
             L1loss_weight = 0
         L1loss = self.L1loss(gt_images, y_0_pred)*L1loss_weight
-        """ 
+         
         jdark_weight = 0
         jdark = 0
         if epoch < 20:
@@ -176,7 +176,7 @@ class GaussianDiffusionTrainer(nn.Module):
 
         #loss = loss + mse_loss + exposure_loss + col_loss + ssim_loss + perceptual_loss + L1loss + lchLoss + labLoss + jdark + L_color
             #[loss, mse_loss, col_loss, exposure_loss, ssimLoss,perceptual_loss,]
-        return [loss, mse_loss, col_loss, exposure_loss, ssimLoss, perceptual_loss, L1loss]
+        return [loss, mse_loss, col_loss, exposure_loss, ssimLoss, perceptual_loss]
 
     # def forward(self, gt_images,lowlight_image,snr_map):
     #     """

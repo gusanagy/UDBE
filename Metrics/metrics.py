@@ -61,9 +61,9 @@ def nmetrics(a):
     # p1 = 0.0282
     # p2 = 0.2953
     # p3 = 3.5753
-    p1 = 0.2907 # (menos peso, pois o brilho pode afetar a precisão da medição da cor)
+    p1 = 0.1938 # (menos peso, pois o brilho pode afetar a precisão da medição da cor)
     p2 = 0.5155 # (maior peso, pois a nitidez é crucial para imagens com brilho)
-    p3 = 0.1938 # (peso moderado para o contraste)
+    p3 = 0.2907 # (peso moderado para o contraste)
 
     #1st term UICM
     rg = rgb[:,:,0] - rgb[:,:,1]
