@@ -423,7 +423,10 @@ def Test(config: Dict,epoch):
     #lpips_list=[]
     uciqe_list = []
     uiqm_list =[]
-    test_imgs = []
+    test_get = []
+    test_low = []
+    test_get = []
+    test_res = []
 
 
     model.eval()
@@ -483,8 +486,9 @@ def Test(config: Dict,epoch):
                     ssim_list.append(ssim_score)
                     uiqm_list.append(uiqm)
                     uciqe_list.append(uciqe)
-                    test_imgs.append({"Imagem de baixa luminosidade": [wandb.Image(low_img, caption="Low Light Image")], "Imagem de Alta luminosidade":[wandb.Image(gt_image, caption="High LightImage")],"Imagem gerada pela rede": [wandb.Image(res_Imgs, caption="Restored Image")]})
-
+                    """ test_res.append({"Imagem gerada pela rede": [wandb.Image(res_Imgs, caption="Restored Image")]})
+                    test_low.append({"Imagem de baixa luminosidade": [wandb.Image(low_img, caption="Low Light Image")]})
+                    test_res.append({"Imagem de Alta luminosidade":[wandb.Image(gt_image, caption="High LightImage")]}) """
 
                     # Colocar flag no wandb para as variaveis psnr ssim
                     #print('psnr:', psnr, '  ssim:', ssim_score)
@@ -515,8 +519,9 @@ def Test(config: Dict,epoch):
                     "Average UCIQE": avg_uciqe,
                     "PSNR": psnr,
                     "SSIM": ssim_score,
-                    "Test from epoch": epoch},
-                    "Image Test":test_imgs})
+                    "Test from epoch": epoch#,
+                    #"Image Test":test_imgs
+                    }})
 
                 #print('psnr_orgin_avg:', avg_psnr)
                 #print('ssim_orgin_avg:', avg_ssim)
