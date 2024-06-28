@@ -47,7 +47,7 @@ if __name__== "__main__" :
     wandb.init(
              project="CLEDiffusion",
              config=vars(config),
-             name="Treino e Teste GlowDiff 4 loss",
+             name="Treino GlowDiff RUIE",
              tags=["Train","No mask", "GlowDiff"],
              group="Branch glown_diffusion_train",
              job_type="train",
