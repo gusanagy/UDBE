@@ -12,7 +12,7 @@ if __name__== "__main__" :
         "DDP": False,
         "state": "train", # or eval
         "epoch": 1001,
-        "batch_size":8 ,
+        "batch_size":8,
         "T": 1000,
         "channel": 128,
         "channel_mult": [1, 2, 3, 4],
@@ -26,7 +26,7 @@ if __name__== "__main__" :
         "img_size": 32,
         "grad_clip": 1.,
         "device": "cuda", #MODIFIQUEI
-        "device_list": [1, 0],#[0, 1]
+        "device_list": [0, 1],#[0, 1]
         #"device_list": [3,2,1,0],
         
         "ddim":True,
