@@ -40,19 +40,24 @@ if __name__== "__main__" :
     parser.add_argument('--dataset_path', type=str, default="./data/UDWdata/")
     parser.add_argument('--state', type=str, default="train")  #or eval
     parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
+    parser.add_argument('--inference_image', type=str, default=None)  #or eval
     parser.add_argument('--output_path', type=str, default="./output/")  #or eval
+    parser.add_argument('--wandb', type=bool, default=True)  #or False
+    parser.add_argument('--wandb_name', type=str, default="CLE_GlowDiff")
+    #adicionar mais argumentos para o wandb
 
     config = parser.parse_args()
     
-    wandb.init(
-             project="CLEDiffusion",
-             config=vars(config),
-             name="Treino GlowDiff RUIE",
-             tags=["Train","No mask", "GlowDiff"],
-             group="Branch glown_diffusion_train",
-             job_type="train",
+    if config.wandb:
+        wandb.init(
+                project=config.wandb_name+"_"+config.dataset,
+                config=vars(config),
+                name="Treino GlowDiff RUIE",
+                tags=["Train","No mask", "GlowDiff"],
+                group="Branch glown_diffusion_train",
+                job_type="train",
 
-         ) 
+            ) 
     
     for key, value in modelConfig.items():
         setattr(config, key, value)
@@ -61,7 +66,8 @@ if __name__== "__main__" :
 
     train(config)#importar a funcao ou classe de papeline de treinamento== treino/teste e carregar as configs e rodar
 
-    wandb.finish()
+    if config.wandb:
+        wandb.finish()
 
     
 #start trainig papeline
