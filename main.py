@@ -50,10 +50,10 @@ if __name__== "__main__" :
     
     if config.wandb:
         wandb.init(
-                project=config.wandb_name+"_"+config.dataset,
+                project=config.wandb_name,
                 config=vars(config),
-                name="Treino GlowDiff RUIE",
-                tags=["Train","No mask", "GlowDiff"],
+                name= config.state +"_"+ config.wandb_name +"_"+ config.dataset,
+                tags=[config.state, config.dataset],
                 group="Branch glown_diffusion_train",
                 job_type="train",
 

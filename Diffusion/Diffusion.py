@@ -72,7 +72,7 @@ class GaussianDiffusionTrainer(nn.Module):
         """
         Algorithm 1.
         """
-
+        #analisar a imagem latente 
         t = torch.randint(self.T, size=(gt_images.shape[0],), device=gt_images.device)  # (80,)  T设置为1000
         noise = torch.randn_like(gt_images)  # (80,3,32,32)
         y_t = (

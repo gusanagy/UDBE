@@ -76,7 +76,7 @@ class load_data(data.Dataset):
         random.seed(1)
         data_low=data_low/255.0
 
-        data_low=np.power(data_low,0.5)#0.25 # Aplicação da correção gamma ajustada para imagens subaquáticas
+        data_low=np.power(data_low,0.5)#0.25 # Aplicação da correção gamma ajustada para imagens subaquáticas #testar transformcaoe sde gama imprimindo antes e depois
         data_low = self.transform(image=data_low)["image"]
         #mean and var of lol training dataset. If you change dataset, please change mean and var.
         ##RGB normalization
@@ -88,7 +88,7 @@ class load_data(data.Dataset):
         #mean=torch.tensor([0.4174, 0.4897, 0.2255])
         #var=torch.tensor([0.0383, 0.0338, 0.0259])
         data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
-        data_low=data_low/30#20
+        data_low=data_low/30#20  #investigar a necessidade do fator de escala
 
         data_max_r=data_low[0].max()
         data_max_g = data_low[1].max()
@@ -138,7 +138,7 @@ class load_data_test(data.Dataset):
         seed = torch.random.seed()
 
         data_low = cv2.imread(self.input_data_low[idx])
-
+        ###Retirar as constantes de brilho para o teste assim como pra inferencia
         data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-75) #modificação para ajuste automatico de brilho para datalow
 
         ### Processamento das imagens // Avaliar aplicação // funcionalizar
@@ -153,11 +153,8 @@ class load_data_test(data.Dataset):
         data_low = self.transform(image=data_low)["image"]
         mean=torch.tensor([0.4350, 0.4445, 0.4086])
         var=torch.tensor([0.0193, 0.0134, 0.0199])
-        #mean = torch.tensor([0.4174, 0.4897, 0.2255])
-        #var = torch.tensor([0.0383, 0.0338, 0.0259])
-        #mean=torch.tensor([0.2255, 0.4897, 0.4174])
-        #var=torch.tensor([0.0259, 0.0338, 0.0383])
-        data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
+
+        data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)#########testar a normalizacao do pytorch
         data_low=data_low/20
 
         # Calcular máximos dos canais de cor e normalização de cor
@@ -302,7 +299,7 @@ def train(config: Dict):
                 data_high = data_high.to(device)
                 data_low = data_low.to(device)
                 data_color=data_color.to(device)
-                data_blur=data_blur.to(device)
+                data_blur=data_blur.to(device)#printar processamento psnr e concatenacoes
                 snr_map = getSnrMap(data_low, data_blur)
                 data_concate=torch.cat([data_color, snr_map], dim=1)
                 optimizer.zero_grad()
