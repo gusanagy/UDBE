@@ -195,6 +195,9 @@ def logamee(ch, blocksize=8):
 
 
 def main():
+
+
+
     result_path = sys.argv[1]
 
     result_dirs = os.listdir(result_path)
@@ -203,7 +206,7 @@ def main():
 
     N=0
     for imgdir in result_dirs:
-        if '.png' in imgdir:
+        if '.png' in imgdir or '.jpg' in imgdir:
             #corrected image
             corrected = io.imread(os.path.join(result_path,imgdir))
 
@@ -211,6 +214,8 @@ def main():
 
             sumuiqm += uiqm
             sumuciqe += uciqe
+            sumssim += ssim(gt,corrected)
+            sumpsnr += psnr(gt, corrected)
             N +=1
 
             with open(os.path.join(result_path,'metrics.txt'), 'a') as f:
@@ -218,6 +223,8 @@ def main():
 
     muiqm = sumuiqm/N
     muciqe = sumuciqe/N
+    mssim = 
+    mpsnr = 
 
     with open(os.path.join(result_path,'metrics.txt'), 'a') as f:
         f.write('Average: uiqm={} uciqe={}\n'.format(muiqm, muciqe))

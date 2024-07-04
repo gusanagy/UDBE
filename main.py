@@ -71,7 +71,7 @@ if __name__== "__main__" :
     if config.wandb:
         wandb.finish()
 
-    blablabla
+    
     
 #start trainig papeline
     # Start load config
