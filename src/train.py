@@ -378,12 +378,11 @@ def train(config: Dict):
             #f.write(write_data)
             #f.close()
 
-
 def Test(config: Dict,epoch):
 
     ###load the data
-    datapath_test = load_image_paths(config.dataset_path,config.dataset,split=True)[1]
-
+    datapath_test = load_image_paths(config.dataset_path,config.dataset,split=False)
+    print(len(datapath_test))
     # load model and evaluate
     device = config.device_list[0]
     # test_low_path=config.dataset_path+r'*.png'    
@@ -400,30 +399,29 @@ def Test(config: Dict,epoch):
     model = UNet(T=config.T, ch=config.channel, ch_mult=config.channel_mult,
                  attn=config.attn,
                  num_res_blocks=config.num_res_blocks, dropout=0.)
-    ckpt_path=config.output_path+'ckpt/ckpt_'+str(epoch)+'_.pt'
+    #Mudar um pouco aqui para carregar o checkpoint do dataset escolhido
+    ckpt_path=config.output_path+'ckpt/'+ config.dataset +'/ckpt_'+str(epoch)+'_.pt'
     ckpt = torch.load(ckpt_path,map_location='cpu')
     model.load_state_dict({k.replace('module.', ''): v for k, v in ckpt.items()})
     print("model load weight done.")
-    save_dir=config.output_path+'/result/epoch'+str(epoch)+'/'
+    save_dir=config.output_path+'result/'+ config.dataset +'/epoch/'+str(epoch)+'/'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
+    print(f"savedir: {save_dir}, ckpt_path: {ckpt_path}")
     # save_txt_name =save_dir + 'res.txt'
     # f = open(save_txt_name, 'w+')
     # f.close()
-
+        
     image_num = 0
     psnr_list = []
     ssim_list = []
     #lpips_list=[]
     uciqe_list = []
     uiqm_list =[]
-    test_get = []
-    test_low = []
-    test_get = []
-    test_res = []
+    wout = []
 
-
+ 
     model.eval()
     sampler = GaussianDiffusionSampler(
         model, config.beta_1, config.beta_T, config.T).to(device)
@@ -434,7 +432,7 @@ def Test(config: Dict,epoch):
                 image_num = 0
                 for data_low, data_high, data_color,data_blur,filename in tqdmDataLoader:
                     name=filename[0].split('/')[-1]
-                    print('image:',name)
+                    print('Image:',name)
                     gt_image = data_high.to(device)
                     lowlight_image = data_low.to(device)
                     data_color = data_color.to(device)
@@ -481,23 +479,23 @@ def Test(config: Dict,epoch):
                     ssim_list.append(ssim_score)
                     uiqm_list.append(uiqm)
                     uciqe_list.append(uciqe)
-                    """ test_res.append({"Imagem gerada pela rede": [wandb.Image(res_Imgs, caption="Restored Image")]})
-                    test_low.append({"Imagem de baixa luminosidade": [wandb.Image(low_img, caption="Low Light Image")]})
-                    test_res.append({"Imagem de Alta luminosidade":[wandb.Image(gt_image, caption="High LightImage")]}) """
+                    
 
-                    # Colocar flag no wandb para as variaveis psnr ssim
-                    #print('psnr:', psnr, '  ssim:', ssim_score)
+                    #send wandb
+                    output = np.concatenate([low_img, gt_img, res_Imgs], axis=1) / 255
+                    image = wandb.Image(output, caption="Low image, High Image, Enhanced Image")
+                    wout.append(image)
 
                     # show result
-                    # output = np.concatenate([low_img, gt_img, res_Imgs], axis=1) / 255
-                    #output = np.concatenate([low_img, gt_img, res_Imgs, res_trick], axis=1) / 255
+                    # output = np.concatenate([low_img, gt_img, res_Imgs, res_trick], axis=1) / 255
                     # plt.axis('off')
                     # plt.imshow(output)
                     # plt.show()
-                    # save_path = save_dir + name
-                    # cv2.imwrite(save_path, output * 255)
-                    # save_path =save_dir+ name+'.png'
-                    # cv2.imwrite(save_path, res_Imgs)
+                    #save_path = save_dir + name
+                    #cv2.imwrite(save_path, output * 255)
+
+                    save_path =save_dir+ name+'.png'
+                    cv2.imwrite(save_path, res_Imgs)
                 
                 #Metrics
   
@@ -507,15 +505,15 @@ def Test(config: Dict,epoch):
                 avg_uciqe = sum(uciqe_list) / len(uciqe_list)
 
                 # Wandb logs 
-                wandb.log({"Test":{
+                wandb.log({"Inferecia "+config.dataset:{
                     "Average PSNR": avg_psnr,
                     "Average SSIM": avg_ssim,
                     "Average UIQM": avg_uiqm,
                     "Average UCIQE": avg_uciqe,
                     "PSNR": psnr,
                     "SSIM": ssim_score,
-                    "Test from epoch": epoch#,
-                    #"Image Test":test_imgs
+                    "Test from epoch": epoch,
+                    "Image ":wout
                     }})
 
                 #print('psnr_orgin_avg:', avg_psnr)
@@ -536,12 +534,163 @@ def Test(config: Dict,epoch):
 
                 #return avg_psnr,avg_ssim
 
+def Testi(config: Dict,epoch):
+
+    ###load the data
+    datapath_test = load_image_paths(config.dataset_path,config.dataset,split=False)[:1]
+
+    # load model and evaluate
+    device = config.device_list[0]
+    # test_low_path=config.dataset_path+r'*.png'    
+    # test_high_path=config.dataset_path+r'*.png' 
+
+    # datapath_test_low = glob.glob( test_low_path)
+    # datapath_test_high = glob.glob(test_high_path)
+
+    dataload_test = load_data_test(datapath_test,datapath_test)
+    dataloader = DataLoader(dataload_test, batch_size=1, num_workers=4,
+                            drop_last=True, pin_memory=True)
+
+
+    model = UNet(T=config.T, ch=config.channel, ch_mult=config.channel_mult,
+                 attn=config.attn,
+                 num_res_blocks=config.num_res_blocks, dropout=0.)
+    #Mudar um pouco aqui para carregar o checkpoint do dataset escolhido
+    ckpt_path=config.output_path+'ckpt/'+ config.dataset +'/ckpt_'+str(epoch)+'_.pt'
+    ckpt = torch.load(ckpt_path,map_location='cpu')
+    model.load_state_dict({k.replace('module.', ''): v for k, v in ckpt.items()})
+    print("model load weight done.")
+    save_dir=config.output_path+'result/'+ config.dataset+'/ctrl' +'/epoch/'+str(epoch)+'/'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # save_txt_name =save_dir + 'res.txt'
+    # f = open(save_txt_name, 'w+')
+    # f.close()
+
+    image_num = 0
+    psnr_list = []
+    ssim_list = []
+    #lpips_list=[]
+    uciqe_list = []
+    uiqm_list =[]
+    wout = []
+
+
+    model.eval()
+    sampler = GaussianDiffusionSampler(
+        model, config.beta_1, config.beta_T, config.T).to(device)
+    #loss_fn_vgg=lpips.LPIPS(net='vgg')
+
+    with torch.no_grad():
+        with tqdm( dataloader, dynamic_ncols=True) as tqdmDataLoader:
+                image_num = 0
+                for data_low, data_high, data_color,data_blur,filename in tqdmDataLoader:
+                    name=filename[0].split('/')[-1]
+                    print('Image:',name)
+                    gt_image = data_high.to(device)
+                    lowlight_image = data_low.to(device)
+                    data_color = data_color.to(device)
+                    data_blur=data_blur.to(device)
+                    snr_map = getSnrMap(lowlight_image, data_blur)
+                    data_concate=torch.cat([data_color, snr_map], dim=1)
+
+                    for i in range(-8, 8): 
+                        light_high = torch.ones([1]) * i*0.1
+                        light_high = light_high.to(device)
+                        
+                        brightness_level=gt_image.mean([1, 2, 3]) # b*1
+                        time_start = time.time()
+                        sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
+                                            unconditional_guidance_scale=1,ddim_step=config.ddim_step)
+                        time_end=time.time()
+                        print('time cost:', time_end - time_start)
+
+                        sampledImgs=(sampledImgs+1)/2
+                        gt_image=(gt_image+1)/2
+                        lowlight_image=(lowlight_image+1)/2
+                        res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1] 
+                        gt_img=np.clip(gt_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
+                        low_img=np.clip(lowlight_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
+                        
+                        
+                        # # Compute METRICS
+                        # ## compute psnr
+                        # psnr = PSNR(res_Imgs, gt_img)
+                        # #ssim = SSIM(res_Imgs, gt_img, channel_axis=2,data_range=255)
+                        # res_gray = rgb2gray(res_Imgs)
+                        # gt_gray = rgb2gray(gt_img)
+
+                        # ssim_score = SSIM(res_gray, gt_gray, multichannel=True,data_range=1)\
+                        
+                        # #UIQM e UCIQE
+                        # uiqm,uciqe = nmetrics(res_Imgs)
+                    
+                        res_Imgs = (res_Imgs * 255)
+                        gt_img = (gt_img * 255)
+                        low_img = (low_img * 255)
+                        
+                        # psnr_list.append(psnr)
+                        # ssim_list.append(ssim_score)
+                        #uiqm_list.append(uiqm)
+                        #uciqe_list.append(uciqe)
+                        
+
+                        #send wandb
+                        output = np.concatenate([low_img, gt_img, res_Imgs], axis=1) / 255
+                        image = wandb.Image(output, caption="Low image, High Image, Control Enhanced Image")
+                        wout.append(image)
+
+                        # show result
+                        # output = np.concatenate([low_img, gt_img, res_Imgs, res_trick], axis=1) / 255
+                        # plt.axis('off')
+                        # plt.imshow(output)
+                        # plt.show()
+                        #save_path = save_dir + name
+                        #cv2.imwrite(save_path, output * 255)
+
+                        save_path =save_dir+ name+'.png'
+                        cv2.imwrite(save_path, res_Imgs)
+                
+                #Metrics
+  
+                # avg_psnr = sum(psnr_list) / len(psnr_list)
+                # avg_ssim = sum(ssim_list) / len(ssim_list)
+                # avg_uiqm = sum(uiqm_list) / len(uiqm_list)
+                # avg_uciqe = sum(uciqe_list) / len(uciqe_list)
+
+                # Wandb logs 
+                wandb.log({"Inferecia "+config.dataset:{
+                    "Test from epoch": epoch,
+                    "Image Ajuste ":wout
+                    }})
+
+                #print('psnr_orgin_avg:', avg_psnr)
+                #print('ssim_orgin_avg:', avg_ssim)
+                print(f"Test From epoch {epoch} DONE")
+
+                # f = open(save_txt_name, 'w+')
+                # f.write('\npsnr_orgin :')
+                # f.write(str(psnr_list))
+                # f.write('\nssim_orgin :')
+                # f.write(str(ssim_list))
+
+                # f.write('\npsnr_orgin_avg:')
+                # f.write(str(avg_psnr))
+                # f.write('\nssim_orgin_avg:')
+                # f.write(str(avg_ssim))
+                # f.close()
+
+                #return avg_psnr,avg_ssim
+
+
+
 if __name__== "__main__" :
     parser = argparse.ArgumentParser()
     modelConfig = {
   
         "DDP": False,
-        "state": "train", # or eval
+        "state": "eval", # or eval
         "epoch": 601,#10001,
         "batch_size":16 ,
         "T": 1000,
@@ -587,6 +736,6 @@ if __name__== "__main__" :
     for key, value in modelConfig.items():
         setattr(config, key, value)
     print(config)
-    train(config)
+    Test(config,1000)
     # wandb.finish()
     #Test_for_one(modelConfig,epoch=14000)
