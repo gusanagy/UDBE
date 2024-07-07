@@ -223,8 +223,8 @@ def main():
 
     muiqm = sumuiqm/N
     muciqe = sumuciqe/N
-    mssim = 
-    mpsnr = 
+    mssim = 1
+    mpsnr = 1
 
     with open(os.path.join(result_path,'metrics.txt'), 'a') as f:
         f.write('Average: uiqm={} uciqe={}\n'.format(muiqm, muciqe))

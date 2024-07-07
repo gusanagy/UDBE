@@ -1,10 +1,10 @@
-# **Modified CLE Diffusion: Controllable Light Enhancement Diffusion Model for underwater color correction**
+# ** CLE Underwater Diffusion: Controllable Light Enhancement Diffusion Model for underwater images**
 Authors: 
 
 Institutions: 
 
 # Data
-
+<!-- 
  ```
  UWSData
 ├── RUIE
@@ -27,8 +27,20 @@ Institutions:
 └── UIEB
       ├── train
       └── val
+``` -->
+ ```
+ UWSData
+      ├── SUIM
+      │    |── train
+      |    |    ├── images
+      |    |    └── masks
+      │    └── val
+      |         ├── images
+      |         └── masks
+      └── UIEB
+            ├── train
+            └── val
 ```
-
 
 ## Uso do Dataset
 
@@ -50,8 +62,8 @@ pip install -r requirements.txt
 
 or 
 
-```
-conda env create -f CLEDiff_bkp.yaml --name GLDiff
+```conda
+conda env create -f CLEDiff_bkp.yaml --name CLEDiff
 ```
 
 for conda envoiriments
@@ -64,20 +76,17 @@ for conda envoiriments
 python #train from scratch, you can change setting in modelConfig 
 python main.py --dataset_path "" --dataset "UIEB" -- state "train" 
 python main.py --dataset_path "" --dataset "SUIM" -- state "train" 
-python main.py --dataset_path "" --dataset "RUIE" -- state "train" 
 
 python main.py --pretrained_path  --dataset "SUIM" -- state "eval" --pretrained_path "1000.pt"
 python main.py --pretrained_path  --dataset "UIEB" -- state "eval" --pretrained_path "1000.pt"
-python main.py --pretrained_path  --dataset "RUIE" -- state "eval" --pretrained_path "200.pt"
 
 python main.py --pretrained_path  --dataset "SUIM" -- state "inference" --inference_image " "  --pretrained_path "1000.pt"
 python main.py --pretrained_path  --dataset "UIEB" -- state "inference" --inference_image " " --pretrained_path "1000.pt"
-python main.py --pretrained_path  --dataset "RUIE" -- state "inference" --inference_image " " --pretrained_path "1000.pt"
 
 
 ```
 
-Os testes podem ser feitos no notebook Avaliacao.py. Assim como a visualização das imagens dos respectivos datasets. Ao rodar este notebook existem opções para baixar e gerar automaticamente as pastas, datasets e checkpoints necessários para rodar o modelo.
+Os testes podem ser feitos no notebook [avaliacao.ipynb](avaliacao.ipynb). Assim como a visualização das imagens dos respectivos datasets. Ao rodar este notebook existem opções para baixar e gerar automaticamente as pastas, datasets e checkpoints necessários para rodar o modelo.
 <!--
 # Mask CLE Diffusion
 Mask CLE Diffusion finetunes lol checkpoint. In our experiments, lol checkpoint is better than mit-adobe-5K checkpoint.
