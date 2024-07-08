@@ -18,6 +18,10 @@ import sys
 from skimage import io, color, filters
 import os
 import math
+import wandb
+from tqdm import tqdm
+from skimage.metrics import peak_signal_noise_ratio as PSNR
+from skimage.metrics import structural_similarity as SSIM 
 
 def nmetrics(a):
     rgb = a
@@ -195,39 +199,105 @@ def logamee(ch, blocksize=8):
 
 
 def main():
+    """
+    pyav:  pip install imageio[pyav]
+    Enderecos dos resultados de validacao
+    Laura
+    "/home/gusanagy/Documents/Glown-Diffusion/data/LAura_1/UDWdatafinal/SUIM/simple" "Laura" "SUIM"
+    "/home/gusanagy/Documents/Glown-Diffusion/data/LAura_1/UDWdatafinal/UIEB/simple" "Laura" "UIEB"
 
+    "/home/gusanagy/Documents/Glown-Diffusion/data/LAura_1/Wdatafinal/RUIE/simple" "Laura" "RUIE"
 
+    Claudio
+    "/home/gusanagy/Documents/Glown-Diffusion/data/Claudio_saida_modelo/saida_modelo/saida_suim" "Claudio" "SUIM"
+    "/home/gusanagy/Documents/Glown-Diffusion/data/Claudio_saida_modelo/saida_modelo/saida_uibd" "Claudio" "UIEB"
 
+    "/home/gusanagy/Documents/Glown-Diffusion/data/Claudio_saida_modelo/saida_modelo/saida_ruie/uccs" "Claudio" "uccs"
+    "/home/gusanagy/Documents/Glown-Diffusion/data/Claudio_saida_modelo/saida_modelo/saida_ruie/uiqs" "Claudio" "uiqs"
+    "/home/gusanagy/Documents/Glown-Diffusion/data/Claudio_saida_modelo/saida_modelo/saida_ruie/utts" "Claudio" "utts"
+    """
+     
+    # wandb.init(
+    #          project="CLEDiffusion",
+    #          name="Metricas de Validacao RUIE SUIM PSNR SSIM",
+    #          tags=["Metrics", "GlowDiff"],
+    #          group="Metrics",
+    #          job_type="validation",
+
+    #      ) 
+    """ 
     result_path = sys.argv[1]
 
-    result_dirs = os.listdir(result_path)
+    author = sys.argv[2]
 
-    sumuiqm, sumuciqe = 0.,0.
+    dataset = sys.argv[3] """
+    avaliacao = [ 
+        ("/home/gusanagy/Documents/Glown-Diffusion/data/Laura_Metodo_funcao/resultsUIEFSUIM","/home/gusanagy/Documents/Glown-Diffusion/data/valSUIM-20240630T205731Z-001/valSUIM", "Laura_func", "SUIM"),
 
-    N=0
-    for imgdir in result_dirs:
-        if '.png' in imgdir or '.jpg' in imgdir:
-            #corrected image
-            corrected = io.imread(os.path.join(result_path,imgdir))
+        ("/home/gusanagy/Documents/Glown-Diffusion/data/Laura_Metodo_funcao/resultsUIEFTUIEB", "/home/gusanagy/Documents/Glown-Diffusion/data/valUIEB-20240630T205731Z-001/valUIEB","Laura_func", "UIEB"),
+        
+        ("/home/gusanagy/Documents/Glown-Diffusion/data/Laura_met_rede/UDWdatafinal/SUIM/val/reajustadas","/home/gusanagy/Documents/Glown-Diffusion/data/Laura_met_rede/UDWdatafinal/SUIM/val/valresults", "Laura_rede", "SUIM"),
+        ("/home/gusanagy/Documents/Glown-Diffusion/data/Laura_met_rede/UDWdatafinal/UIEB/reajustadas","/home/gusanagy/Documents/Glown-Diffusion/data/Laura_met_rede/UDWdatafinal/UIEB/valresults", "Laura_rede", "UIEB"),
 
-            uiqm,uciqe = nmetrics(corrected)
+        #("/home/gusanagy/Documents/Glown-Diffusion/data/Claudio_saida_modelo/saida_modelo/saida_suim", "/home/gusanagy/Documents/Glown-Diffusion/data/Laura_met_rede/UDWdatafinal/SUIM/val/images","Claudio", "SUIM"),
+        #("/home/gusanagy/Documents/Glown-Diffusion/data/Claudio_saida_modelo/saida_modelo/saida_uibd","/home/gusanagy/Documents/Glown-Diffusion/data/Laura_met_rede/UDWdatafinal/UIEB/val/images", "Claudio", "UIEB")
+                 ]
 
-            sumuiqm += uiqm
-            sumuciqe += uciqe
-            sumssim += ssim(gt,corrected)
-            sumpsnr += psnr(gt, corrected)
-            N +=1
+   
 
-            with open(os.path.join(result_path,'metrics.txt'), 'a') as f:
-                f.write('{}: uiqm={} uciqe={}\n'.format(imgdir,uiqm,uciqe))
+    for candidato in avaliacao:
+        result_path ,gt, author ,dataset = candidato
+        print(f"author: {author} dataset: {dataset}")
+        
+        result_dirs = os.listdir(result_path)
+        result_gt = os.listdir(gt)
 
-    muiqm = sumuiqm/N
-    muciqe = sumuciqe/N
-    mssim = 1
-    mpsnr = 1
+        sumuiqm, sumuciqe = 0.,0.
 
-    with open(os.path.join(result_path,'metrics.txt'), 'a') as f:
-        f.write('Average: uiqm={} uciqe={}\n'.format(muiqm, muciqe))
+        N=0
+        for imgdir, gt in tqdm(zip(result_dirs, result_gt), total=len(result_dirs)):
+            #print(imgdir,gt)
+            if '.png' in imgdir or '.jpg' in imgdir and  '.png' in gt or '.jpg' in gt:
+                #corrected image
+                try:
+                    corrected = io.imread(os.path.join(result_path,imgdir))
+                    gt_image = io.imread(os.path.join(result_path,gt))
+                    #print(corrected.shape)
+                    #print(gt_image.shape)
+                    
+                except Exception as e:
+                    print(f"Erro ao carregar a imagem com PIL: {e}")
+                    continue
+            
+                
+                try:
+                    #print(corrected.shape)
+                    uiqm,uciqe = nmetrics(corrected)
+                    psnr_value  = PSNR(image_true=gt_image, image_test=corrected)
+                    ssim_value = SSIM( gt_image,corrected, multichannel=True,win_size=3)
+                except Exception as e:
+                    print(e)
+                    continue
+
+                sumuiqm += uiqm
+                sumuciqe += uciqe
+                psnr_value += psnr_value
+                ssim_value += ssim_value
+                N +=1
+
+                """ with open(os.path.join(result_path,'metrics.txt'), 'a') as f:
+                    f.write('{}: uiqm={} uciqe={}\n'.format(imgdir,uiqm,uciqe)) """
+
+        muiqm = sumuiqm/N
+        muciqe = sumuciqe/N
+        psnr_average = psnr_value/N
+        ssim_average = ssim_value/N
+
+        print(f'Average: uiqm={muiqm} uciqe={muciqe} psnr = {psnr_average} ssim = {ssim_average}')
+        #wandb.log({author+"_"+dataset:{"UIQM": muiqm, "UCIQE": muciqe, "PSNR": psnr_average, "SSIM": ssim_average}})
+
+        """ with open(os.path.join(result_path,'metrics_completas.txt'), 'a') as f:
+            f.write('Average: uiqm={} uciqe={} psnr={} ssim={}\n'.format(muiqm, muciqe, psnr_average, ssim_average)) """
 
 if __name__ == '__main__':
     main()
