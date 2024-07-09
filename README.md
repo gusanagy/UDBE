@@ -1,4 +1,4 @@
-# ** CLE Underwater Diffusion: Controllable Light Enhancement Diffusion Model for underwater images**
+# **BRDM: Brightness Restoration in Underwater Images from Diffusion Models**
 Authors: 
 
 Institutions: 
