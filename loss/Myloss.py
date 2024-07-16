@@ -41,7 +41,7 @@ class color_loss(nn.Module):
         # loss_cos = self.mse(img_ref, ref_p)
         return loss_cos
 
-class light_loss(nn.Module):
+class light_loss(nn.Module):##pesquisar significado das modificacoes
     def __init__(self):
         super(light_loss, self).__init__()
 
