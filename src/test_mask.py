@@ -75,7 +75,6 @@ class load_data_test(data.Dataset):
         data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
         data_low=data_low/20
 
-
         data_max_r=data_low[0].max()
         data_max_g = data_low[1].max()
         data_max_b = data_low[2].max()
@@ -84,8 +83,6 @@ class load_data_test(data.Dataset):
         color_max[1,:, :] = data_max_g * torch.ones((data_low.shape[1], data_low.shape[2]))
         color_max[2,:, :] = data_max_b * torch.ones((data_low.shape[1], data_low.shape[2]))
         data_color=data_low/(color_max+ 1e-6)
-
-
 
         data_blur = data_low.permute(1, 2, 0).numpy() * 255.0
         data_blur = cv2.blur(data_blur, (5, 5))
