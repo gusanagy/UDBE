@@ -44,3 +44,54 @@ def convert_to_grayscale(image):
 def calculate_ssim(img1, img2):
     score, _ = SSIM(img1, img2, full=True)
     return score
+
+
+def low_light_adjust(mean,std,lower_bound=0.2):
+    """
+    Adjust the mean value to ensure that the lower bound of the light distribution 
+    does not fall below a specified threshold.
+
+    This function modifies the mean value to ensure that the lower bound, 
+    defined as `mean - 2 * std`, is not less than the specified `lower_bound`. 
+    It iteratively increases the mean value until the condition is met.
+
+    Parameters:
+    mean (float): The mean value of the light distribution.
+    std (float): The standard deviation of the light distribution.
+    lower_bound (float, optional): The minimum acceptable lower bound for the 
+                                   light distribution. Default is 0.2.
+
+    Returns:
+    tuple: A tuple containing the adjusted lower bounds of the light distribution 
+           (mean - 2 * std, mean - std).
+    """
+    while mean - std*2 <lower_bound: mean += 0.2;# print("mean low light",mean)    
+
+    return (mean - std*2, mean-std)
+
+def high_light_adjust(mean,std,high_bound=1.6, lower_bound=1.0):
+    """
+    Adjust the mean value to ensure that the high and low bounds of the light distribution 
+    fall within specified thresholds.
+
+    This function modifies the mean value to ensure that the high bound, 
+    defined as `4 * std + mean`, does not exceed the specified `high_bound`, 
+    and the low bound, defined as `2 * std + mean`, does not fall below the specified 
+    `lower_bound`. It iteratively adjusts the mean value until both conditions are met.
+
+    Parameters:
+    mean (float): The mean value of the light distribution.
+    std (float): The standard deviation of the light distribution.
+    high_bound (float, optional): The maximum acceptable high bound for the 
+                                  light distribution. Default is 1.6.
+    lower_bound (float, optional): The minimum acceptable low bound for the 
+                                   light distribution. Default is 1.0.
+
+    Returns:
+    tuple: A tuple containing the adjusted bounds of the light distribution 
+           (2 * std + mean, 4 * std + mean).
+    """
+    while 4*std+mean > high_bound: mean-=0.1;#print("mean high light", mean)
+    while 2*std+mean < lower_bound: mean+=0.1
+
+    return (2*std+mean, 4*std+mean)

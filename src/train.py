@@ -54,7 +54,6 @@ class load_data(data.Dataset):
         self.transform=A.Compose(
             [
                 A.Resize (height=256, width=256),
-                #A.RandomCrop(height=128, width=128),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
                 ToTensorV2(),
@@ -65,31 +64,33 @@ class load_data(data.Dataset):
 
     def __len__(self):  
         return len(self.input_data_low)
+    
+    def light_adjusts(self,image):
+        
+        mean = np.round(np.mean(image)/255,1)
+        std = np.round(np.std(image)/255,2)
+        self.transform_light_high = A.Compose([
+            A.ColorJitter(brightness=high_light_adjust(mean,std), contrast=0, saturation=0, hue=0, p=1.0),
+        ])
+
+        self.transform_light_low = A.Compose([
+            A.ColorJitter(brightness=low_light_adjust(mean,std), contrast=0, saturation=0, hue=0, p=1.0),
+        ])
+        data_low = self.transform_light_low(image=image)["image"]
+        data_high = self.transform_light_high(image=image)["image"]
+
+        return  data_low, data_high
 
     def __getitem__(self, idx):
         seed = torch.random.seed()
         data_low = cv2.imread(self.input_data_low[idx])
 
-        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-random.randint(50, 100)) #modificação para ajuste automatico de brilho para datalow
-
         data_low=data_low[:,:,::-1].copy()
+        data_low, data_high = self.light_adjusts(image=data_low)
         random.seed(1)
-        data_low=data_low/255.0
-
-        data_low=np.power(data_low,0.5)#0.25 # Aplicação da correção gamma ajustada para imagens subaquáticas #testar transformcaoe sde gama imprimindo antes e depois
-        data_low = self.transform(image=data_low)["image"]
-        #mean and var of lol training dataset. If you change dataset, please change mean and var.
-        ##RGB normalization
-        #mean=torch.tensor([0.2255, 0.4897, 0.4174])
-        #var=torch.tensor([0.0259, 0.0338, 0.0383])
-        mean=torch.tensor([0.4350, 0.4445, 0.4086])
-        var=torch.tensor([0.0193, 0.0134, 0.0199])
-        ##BGR normalization
-        #mean=torch.tensor([0.4174, 0.4897, 0.2255])
-        #var=torch.tensor([0.0383, 0.0338, 0.0259])
-        data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)
-        data_low=data_low/30#20  #investigar a necessidade do fator de escala
-
+        
+        data_low = self.transform(image=data_low)["image"]/255
+        
         data_max_r=data_low[0].max()
         data_max_g = data_low[1].max()
         data_max_b = data_low[2].max()
@@ -99,12 +100,7 @@ class load_data(data.Dataset):
         color_max[2,:, :] = data_max_b * torch.ones((data_low.shape[1], data_low.shape[2]))
         data_color=data_low/(color_max + 1e-6)
 
-        data_high = cv2.imread(self.input_data_high[idx])
-
-        data_high = cv2.convertScaleAbs(data_high, alpha=1.0, beta=random.randint(50, 100)) #modificação para ajuste automatico de brilho para datalow
-
-        data_high=data_high[:,:,::-1].copy()
-        #data_high = Image.fromarray(data_high)
+        
         random.seed(1)
         data_high = self.transform(image=data_high)["image"]/255.0
         data_high=data_high*2-1
@@ -133,31 +129,34 @@ class load_data_test(data.Dataset):
 
     def __len__(self):
         return len(self.input_data_low)
+    
+    def light_adjusts(self,image):
+        
+        mean = np.round(np.mean(image)/255,1)
+        std = np.round(np.std(image)/255,2)
+        self.transform_light_high = A.Compose([
+            A.ColorJitter(brightness=high_light_adjust(mean,std), contrast=0, saturation=0, hue=0, p=1.0),
+        ])
+
+        self.transform_light_low = A.Compose([
+            A.ColorJitter(brightness=low_light_adjust(mean,std), contrast=0, saturation=0, hue=0, p=1.0),
+        ])
+        data_low = self.transform_light_low(image=image)["image"]
+        data_high = self.transform_light_high(image=image)["image"]
+
+        return  data_low, data_high
+
 
     def __getitem__(self, idx):
         seed = torch.random.seed()
-
         data_low = cv2.imread(self.input_data_low[idx])
-        ###Retirar as constantes de brilho para o teste assim como pra inferencia
-        data_low = cv2.convertScaleAbs(data_low, alpha=1.0, beta=-75) #modificação para ajuste automatico de brilho para datalow
 
-        ### Processamento das imagens // Avaliar aplicação // funcionalizar
-        # Conversão de canais de cor e normalização
         data_low=data_low[:,:,::-1].copy()
+        data_low, data_high = self.light_adjusts(image=data_low)
         random.seed(1)
-        data_low=data_low/255.0
-        # Aplicação de correção gamma
-        data_low=np.power(data_low,0.5)
-
-        # Transformação e normalização
-        data_low = self.transform(image=data_low)["image"]
-        mean=torch.tensor([0.4350, 0.4445, 0.4086])
-        var=torch.tensor([0.0193, 0.0134, 0.0199])
-
-        data_low=(data_low-mean.view(3,1,1))/var.view(3,1,1)#########testar a normalizacao do pytorch
-        data_low=data_low/20
-
-        # Calcular máximos dos canais de cor e normalização de cor
+        
+        data_low = self.transform(image=data_low)["image"]/255
+        
         data_max_r=data_low[0].max()
         data_max_g = data_low[1].max()
         data_max_b = data_low[2].max()
@@ -165,33 +164,64 @@ class load_data_test(data.Dataset):
         color_max[0,:,:]=data_max_r*torch.ones((data_low.shape[1],data_low.shape[2]))    
         color_max[1,:, :] = data_max_g * torch.ones((data_low.shape[1], data_low.shape[2]))
         color_max[2,:, :] = data_max_b * torch.ones((data_low.shape[1], data_low.shape[2]))
-        data_color=data_low/(color_max+ 1e-6)
-        #data_color = self.transform(data_color)
-        #data_color=torch.from_numpy(data_color).float()
-        #data_color=data_color.permute(2,0,1)
+        data_color=data_low/(color_max + 1e-6)
 
-        # Processamento da imagem de alta luminosidade
-        data_high = cv2.imread(self.input_data_high[idx])
-
-        data_high= cv2.convertScaleAbs(data_high, alpha=1.0, beta=50)
-
-        data_high=data_high[:,:,::-1].copy()
-        #data_high = Image.fromarray(data_high)
+        
         random.seed(1)
         data_high = self.transform(image=data_high)["image"]/255.0
         data_high=data_high*2-1
 
-        #normalization
-        #data_high=data_high**0.25
-
-        # Desfocagem e preparação do retorno
         data_blur = data_low.permute(1, 2, 0).numpy() * 255.0
         data_blur = cv2.blur(data_blur, (5, 5))
         data_blur = data_blur * 1.0 / 255.0
         data_blur = torch.Tensor(data_blur).float().permute(2, 0, 1)
 
+        return [data_low, data_high,data_color,data_blur, self.input_data_low[idx]]
 
-        return [data_low, data_high,data_color,data_blur,self.input_data_low[idx]]
+
+class load_data_inference(data.Dataset):
+    def __init__(self, input_data_low):
+        self.input_data_low = input_data_low
+        print("Total training examples:", len(self.input_data_low))
+        self.transform=A.Compose(
+            [
+              #  A.RandomCrop(height=400, width=400),
+                A.Resize(256, 256),
+                ToTensorV2(),
+            ]
+        )
+
+
+
+    def __len__(self):
+        return len(self.input_data_low)
+
+    def __getitem__(self, idx):
+        
+        data_low = cv2.imread(self.input_data_low[idx])
+        data_low = data_low[:,:,::-1].copy()
+        random.seed(1)
+        data_low = data_low/255.0
+
+        data_low = self.transform(image=data_low)["image"]
+        data_low2 = data_low
+        data_low2 = data_low2*2-1
+        
+        data_max_r=data_low[0].max()
+        data_max_g = data_low[1].max()
+        data_max_b = data_low[2].max()
+        color_max=torch.zeros((data_low.shape[0],data_low.shape[1],data_low.shape[2]))
+        color_max[0,:,:]=data_max_r*torch.ones((data_low.shape[1],data_low.shape[2]))    #这里之前都写错了，应该从color_max[0:,:]改为color_max[0,:,:]#Isso foi escrito errado antes, deveria ser alterado de color_max[0:,:] para color_max[0,:,:]
+        color_max[1,:, :] = data_max_g * torch.ones((data_low.shape[1], data_low.shape[2]))
+        color_max[2,:, :] = data_max_b * torch.ones((data_low.shape[1], data_low.shape[2]))
+        data_color=data_low/(color_max+ 1e-6)
+
+        data_blur = data_low.permute(1, 2, 0).numpy() * 255.0
+        data_blur = cv2.blur(data_blur, (5, 5))
+        data_blur = data_blur * 1.0 / 255.0
+        data_blur = torch.Tensor(data_blur).float().permute(2, 0, 1)
+
+        return [data_low, data_color,data_blur]
 
 
 # def getSnrMap(data_low,data_blur):
@@ -534,23 +564,17 @@ def Test(config: Dict,epoch):
 
                 #return avg_psnr,avg_ssim
 
-def Testi(config: Dict,epoch):
+def Inference(config: Dict,epoch):
 
     ###load the data
     datapath_test = load_image_paths(config.dataset_path,config.dataset,split=False)[:1]
 
     # load model and evaluate
     device = config.device_list[0]
-    # test_low_path=config.dataset_path+r'*.png'    
-    # test_high_path=config.dataset_path+r'*.png' 
-
-    # datapath_test_low = glob.glob( test_low_path)
-    # datapath_test_high = glob.glob(test_high_path)
-
-    dataload_test = load_data_test(datapath_test,datapath_test)
+    
+    dataload_test = load_data_inference(datapath_test,datapath_test)
     dataloader = DataLoader(dataload_test, batch_size=1, num_workers=4,
                             drop_last=True, pin_memory=True)
-
 
     model = UNet(T=config.T, ch=config.channel, ch_mult=config.channel_mult,
                  attn=config.attn,
@@ -564,14 +588,14 @@ def Testi(config: Dict,epoch):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    # save_txt_name =save_dir + 'res.txt'
-    # f = open(save_txt_name, 'w+')
-    # f.close()
+    save_txt_name =save_dir + 'res.txt'
+    f = open(save_txt_name, 'w+')
+    f.close()
 
     image_num = 0
     psnr_list = []
     ssim_list = []
-    #lpips_list=[]
+    
     uciqe_list = []
     uiqm_list =[]
     wout = []
@@ -585,61 +609,75 @@ def Testi(config: Dict,epoch):
     with torch.no_grad():
         with tqdm( dataloader, dynamic_ncols=True) as tqdmDataLoader:
                 image_num = 0
-                for data_low, data_high, data_color,data_blur,filename in tqdmDataLoader:
-                    name=filename[0].split('/')[-1]
-                    print('Image:',name)
-                    gt_image = data_high.to(device)
+                for data_low, data_color,data_blur in tqdmDataLoader:
+                    
                     lowlight_image = data_low.to(device)
                     data_color = data_color.to(device)
                     data_blur=data_blur.to(device)
                     snr_map = getSnrMap(lowlight_image, data_blur)
                     data_concate=torch.cat([data_color, snr_map], dim=1)
 
-                    for i in range(-8, 8): 
-                        light_high = torch.ones([1]) * i*0.1
-                        light_high = light_high.to(device)
+                    wandb.log({"Image Input": [wandb.Image(data_low.numpy(), caption="Input Image")]})
+                    for i in range(-3, 3): 
+                        brightness_level = torch.ones([1]) * i
+                        brightness_level = brightness_level.to(device)
                         
-                        brightness_level=gt_image.mean([1, 2, 3]) # b*1
                         time_start = time.time()
                         sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
                                             unconditional_guidance_scale=1,ddim_step=config.ddim_step)
                         time_end=time.time()
                         print('time cost:', time_end - time_start)
 
-                        sampledImgs=(sampledImgs+1)/2
-                        gt_image=(gt_image+1)/2
-                        lowlight_image=(lowlight_image+1)/2
-                        res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1] 
-                        gt_img=np.clip(gt_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
-                        low_img=np.clip(lowlight_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
+                        sampledImgs=(sampledImgs+1)/2#ajuste da trasformacao da rede 
+                        res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]*255
+
+                        wandb.log({"Image Inference": [wandb.Image(res_Imgs, caption="Image")]})
+                        save_path =save_dir+ config.data_name+'_level'+str(i)+'.png'
+                        print("Image saved in: ",save_path)
+
+                        cv2.imwrite(save_path, res_Imgs)
+                    # for i in range(-8, 8): 
+                    #     light_high = torch.ones([1]) * i
+                    #     light_high = light_high.to(device)
+                        
+                    #     brightness_level=gt_image.mean([1, 2, 3]) # b*1
+                    #     time_start = time.time()
+                    #     sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
+                    #                         unconditional_guidance_scale=1,ddim_step=config.ddim_step)
+                    #     time_end=time.time()
+                    #     print('time cost:', time_end - time_start)
+
+                    #     sampledImgs=(sampledImgs+1)/2
+                    #     gt_image=(gt_image+1)/2
+                    #     lowlight_image=(lowlight_image+1)/2
+                    #     res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1] 
+                    #     gt_img=np.clip(gt_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
+                    #     low_img=np.clip(lowlight_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
                         
                         
                         # # Compute METRICS
                         # ## compute psnr
-                        # psnr = PSNR(res_Imgs, gt_img)
+                        # psnr = PSNR(res_Imgs, data_low)
                         # #ssim = SSIM(res_Imgs, gt_img, channel_axis=2,data_range=255)
                         # res_gray = rgb2gray(res_Imgs)
-                        # gt_gray = rgb2gray(gt_img)
+                        # gt_gray = rgb2gray(data_low)
 
                         # ssim_score = SSIM(res_gray, gt_gray, multichannel=True,data_range=1)\
                         
                         # #UIQM e UCIQE
                         # uiqm,uciqe = nmetrics(res_Imgs)
                     
-                        res_Imgs = (res_Imgs * 255)
-                        gt_img = (gt_img * 255)
-                        low_img = (low_img * 255)
-                        
+                                               
                         # psnr_list.append(psnr)
                         # ssim_list.append(ssim_score)
-                        #uiqm_list.append(uiqm)
-                        #uciqe_list.append(uciqe)
+                        # uiqm_list.append(uiqm)
+                        # uciqe_list.append(uciqe)
                         
 
-                        #send wandb
-                        output = np.concatenate([low_img, gt_img, res_Imgs], axis=1) / 255
-                        image = wandb.Image(output, caption="Low image, High Image, Control Enhanced Image")
-                        wout.append(image)
+                        # #send wandb
+                        # output = np.concatenate([low_img, gt_img, res_Imgs], axis=1) / 255
+                        # image = wandb.Image(output, caption="Low image, High Image, Control Enhanced Image")
+                        # wout.append(image)
 
                         # show result
                         # output = np.concatenate([low_img, gt_img, res_Imgs, res_trick], axis=1) / 255
@@ -649,8 +687,8 @@ def Testi(config: Dict,epoch):
                         #save_path = save_dir + name
                         #cv2.imwrite(save_path, output * 255)
 
-                        save_path =save_dir+ name+'.png'
-                        cv2.imwrite(save_path, res_Imgs)
+                        # save_path =save_dir+ name+'.png'
+                        # cv2.imwrite(save_path, res_Imgs)
                 
                 #Metrics
   
@@ -659,15 +697,15 @@ def Testi(config: Dict,epoch):
                 # avg_uiqm = sum(uiqm_list) / len(uiqm_list)
                 # avg_uciqe = sum(uciqe_list) / len(uciqe_list)
 
-                # Wandb logs 
-                wandb.log({"Inferecia "+config.dataset:{
-                    "Test from epoch": epoch,
-                    "Image Ajuste ":wout
-                    }})
+                # # Wandb logs 
+                # wandb.log({"Inferecia "+config.dataset:{
+                #     "Test from epoch": epoch,
+                #     "Image Ajuste ":wout
+                #     }})
 
-                #print('psnr_orgin_avg:', avg_psnr)
-                #print('ssim_orgin_avg:', avg_ssim)
-                print(f"Test From epoch {epoch} DONE")
+                # #print('psnr_orgin_avg:', avg_psnr)
+                # #print('ssim_orgin_avg:', avg_ssim)
+                # print(f"Test From epoch {epoch} DONE")
 
                 # f = open(save_txt_name, 'w+')
                 # f.write('\npsnr_orgin :')
