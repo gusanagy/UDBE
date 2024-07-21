@@ -582,10 +582,8 @@ def Inference(config: Dict,epoch):
                     data_blur=data_blur.to(device)
                     snr_map = getSnrMap(lowlight_image, data_blur)
                     data_concate=torch.cat([data_color, snr_map], dim=1)
-                    
-
-                        
                     brightness_level=data_low.mean([1, 2, 3]).to(device) # b*1
+                    
                     print(f"tipos: lowlight:{lowlight_image.dtype} dataconcate: {data_concate.dtype}, brithness:{brightness_level.dtype}")
                     time_start = time.time()
                     sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
