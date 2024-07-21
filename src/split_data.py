@@ -64,7 +64,7 @@ def check_alpha_channel(image_path):
 
 
 
-def load_image_paths(dataset_path, dataset="all",task="val",split=False):
+def load_image_paths(dataset_path, dataset="all",task="train",split=False):
     """
     dataset_path: endereço do dataset raiz
     dataset: "all", "UIEB", "RUIE", "SUIM"

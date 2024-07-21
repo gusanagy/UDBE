@@ -43,6 +43,7 @@ from tqdm import tqdm
 import wandb
 import random
 from src.split_data import check_alpha_channel, load_image_paths
+import matplotlib.pyplot as plt
 
 
 
@@ -531,12 +532,13 @@ def Test(config: Dict,epoch):
 def Inference(config: Dict,epoch):
 
     ###load the data
-    datapath_test = load_image_paths(config.dataset_path,config.dataset,split=False)[:1]
+    datapath_test = load_image_paths(dataset_path=config.dataset_path,dataset=config.dataset,split=False,task="val")[:1]
+    print(datapath_test)
 
     # load model and evaluate
     device = config.device_list[0]
     
-    dataload_test = load_data_inference(datapath_test,datapath_test)
+    dataload_test = load_data_inference(datapath_test)
     dataloader = DataLoader(dataload_test, batch_size=1, num_workers=4,
                             drop_last=True, pin_memory=True)
 
@@ -562,7 +564,7 @@ def Inference(config: Dict,epoch):
     
     uciqe_list = []
     uiqm_list =[]
-    wout = []
+    imags = []
 
 
     model.eval()
@@ -580,26 +582,45 @@ def Inference(config: Dict,epoch):
                     data_blur=data_blur.to(device)
                     snr_map = getSnrMap(lowlight_image, data_blur)
                     data_concate=torch.cat([data_color, snr_map], dim=1)
+                    
 
-                    wandb.log({"Image Input": [wandb.Image(data_low.numpy(), caption="Input Image")]})
-                    for i in range(-3, 3): 
-                        brightness_level = torch.ones([1]) * i
-                        brightness_level = brightness_level.to(device)
                         
-                        time_start = time.time()
-                        sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
-                                            unconditional_guidance_scale=1,ddim_step=config.ddim_step)
-                        time_end=time.time()
-                        print('time cost:', time_end - time_start)
+                    brightness_level=data_low.mean([1, 2, 3]).to(device) # b*1
+                    print(f"tipos: lowlight:{lowlight_image.dtype} dataconcate: {data_concate.dtype}, brithness:{brightness_level.dtype}")
+                    time_start = time.time()
+                    sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
+                                          unconditional_guidance_scale=1,ddim_step=config.ddim_step)
+                    time_end=time.time()
+                    print('time cost:', time_end - time_start)
 
-                        sampledImgs=(sampledImgs+1)/2#ajuste da trasformacao da rede 
-                        res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]*255
+                    sampledImgs=(sampledImgs+1)/2
+                    #gt_image=(gt_image+1)/2
+                    #lowlight_image=(lowlight_image+1)/2
+                    res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
+                    #imags.append(data_low.cpu().numpy().transpose(1, 2, 0));imags.append(snr_map.cpu().numpy().transpose(1, 2, 0))
+                    #wandb.log({"Image Input": [wandb.Image(data_low.numpy(), caption="Input Image")]})
+                    # for i in range(-3, 3): 
+                    #     brightness_level = torch.ones([1]) * i
+                    #     brightness_level = brightness_level.to(device)
+                        
+                    #     time_start = time.time()
+                    #     sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
+                    #                         unconditional_guidance_scale=1,ddim_step=config.ddim_step)
+                    #     time_end=time.time()
+                    #     print('time cost:', time_end - time_start)
 
-                        wandb.log({"Image Inference": [wandb.Image(res_Imgs, caption="Image")]})
-                        save_path =save_dir+ config.data_name+'_level'+str(i)+'.png'
-                        print("Image saved in: ",save_path)
+                    #     sampledImgs=(sampledImgs+1)/2#ajuste da trasformacao da rede 
+                    #     res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]*255
+                    #     print(res_Imgs.shape)
 
-                        cv2.imwrite(save_path, res_Imgs)
+                    #     #wandb.log({"Image Inference": [wandb.Image(res_Imgs, caption="Image")]}) ### concertar esse negocio
+                    #     #save_path =save_dir+ config.data_name+'_level'+str(i)+'.png'
+                    #     #print("Image saved in: ",save_path)
+                    imags.append(res_Imgs)
+    plot_images(imags)
+
+
+                        #cv2.imwrite(save_path, res_Imgs)
                     # for i in range(-8, 8): 
                     #     light_high = torch.ones([1]) * i
                     #     light_high = light_high.to(device)

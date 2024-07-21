@@ -1,7 +1,7 @@
 import wandb
 import argparse
 from src import train
-from src.train import Test, Testi
+from src.train import Test, Test, Inference
 
 #import packages
 
@@ -13,7 +13,7 @@ if __name__== "__main__" :
         "DDP": False,
         "state": "eval", # or eval
         "epoch": 1001,
-        "batch_size":8,
+        "batch_size":16,
         "T": 1000,
         "channel": 128,
         "channel_mult": [1, 2, 3, 4],
@@ -43,7 +43,7 @@ if __name__== "__main__" :
     parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
     parser.add_argument('--inference_image', type=str, default=None)  #or eval
     parser.add_argument('--output_path', type=str, default="./output/")  #or eval
-    parser.add_argument('--wandb', type=bool, default=True)  #or False
+    parser.add_argument('--wandb', type=bool, default=False)  #or False
     parser.add_argument('--wandb_name', type=str, default="CLE_GlowDiff")
     #adicionar mais argumentos para o wandb
 
@@ -66,7 +66,7 @@ if __name__== "__main__" :
     print(config)
 
     #train(config)#importar a funcao ou classe de papeline de treinamento== treino/teste e carregar as configs e rodar
-    Testi(config, 1000)
+    Inference(config, 1000)
 
     if config.wandb:
         wandb.finish()

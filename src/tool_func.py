@@ -9,6 +9,25 @@ from skimage.metrics import structural_similarity as SSIM
 # convert_to_grayscale
 # calculate_ssim
 
+def plot_images(images):
+    n = len(images)
+    # Calcula o layout da grade para as imagens
+    cols = int(np.ceil(np.sqrt(n)))
+    rows = int(np.ceil(n / cols))
+    
+    fig, axes = plt.subplots(rows, cols, figsize=(12, 12))
+    axes = axes.flatten()
+    
+    for i, img in enumerate(images):
+        axes[i].imshow(img)
+        axes[i].axis('off')  # Desliga os eixos
+    
+    # Desliga eixos para os subplots não usados
+    for ax in axes[n:]:
+        ax.axis('off')
+    
+    plt.tight_layout()
+    plt.show()
 def getSnrMap(data_low,data_blur):
     data_low = data_low[:, 0:1, :, :] * 0.299 + data_low[:, 1:2, :, :] * 0.587 + data_low[:, 2:3, :, :] * 0.114
     data_blur = data_blur[:, 0:1, :, :] * 0.299 + data_blur[:, 1:2, :, :] * 0.587 + data_blur[:, 2:3, :, :] * 0.114
