@@ -153,7 +153,8 @@ class load_data_test(data.Dataset):
         data_low = cv2.imread(self.input_data_low[idx])
 
         data_low=data_low[:,:,::-1].copy()
-        data_low, data_high = self.light_adjusts(image=data_low)
+        #data_low, data_high = self.light_adjusts(image=data_low)
+        _, data_high = self.light_adjusts(image=data_low)
         random.seed(1)
         
         data_low = self.transform(image=data_low)["image"]/255
@@ -167,7 +168,6 @@ class load_data_test(data.Dataset):
         color_max[2,:, :] = data_max_b * torch.ones((data_low.shape[1], data_low.shape[2]))
         data_color=data_low/(color_max + 1e-6)
 
-        
         random.seed(1)
         data_high = self.transform(image=data_high)["image"]/255.0
         data_high=data_high*2-1
@@ -376,7 +376,7 @@ def train(config: Dict):
 def Test(config: Dict,epoch):
 
     ###load the data
-    datapath_test = load_image_paths(config.dataset_path,config.dataset,split=False)
+    datapath_test = load_image_paths(config.dataset_path,config.dataset,task="val",split=False)
     print(len(datapath_test))
     # load model and evaluate
     device = config.device_list[0]
@@ -400,17 +400,23 @@ def Test(config: Dict,epoch):
     model.load_state_dict({k.replace('module.', ''): v for k, v in ckpt.items()})
     print("model load weight done.")
     save_dir=config.output_path+'result/'+ config.dataset +'/epoch/'+str(epoch)+'/'
+    save_concate=config.output_path+'result/'+ config.dataset +'/epoch/'+str(epoch)+'concate'+'/'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+    if not os.path.exists(save_concate):
+        os.makedirs(save_concate)
 
     print(f"savedir: {save_dir}, ckpt_path: {ckpt_path}")
-    # save_txt_name =save_dir + 'res.txt'
-    # f = open(save_txt_name, 'w+')
-    # f.close()
+    save_txt_name =save_dir + 'res.txt'
+    f = open(save_txt_name, 'w+')
+    f.close()
         
     image_num = 0
     psnr_list = []
     ssim_list = []
+    uicm_list = []
+    uism_list = []
+    uiconm_list =[]
     #lpips_list=[]
     uciqe_list = []
     uiqm_list =[]
@@ -464,33 +470,33 @@ def Test(config: Dict,epoch):
                     ssim_score = SSIM(res_gray, gt_gray, multichannel=True,data_range=1)\
                     
                     #UIQM e UCIQE
-                    uiqm,uciqe = nmetrics(res_Imgs)
-                   
-                    res_Imgs = (res_Imgs * 255)
-                    gt_img = (gt_img * 255)
-                    low_img = (low_img * 255)
+                    uiqm,uciqe, uicm, uism, uiconm = nmetrics(res_Imgs)
                     
                     psnr_list.append(psnr)
                     ssim_list.append(ssim_score)
                     uiqm_list.append(uiqm)
                     uciqe_list.append(uciqe)
+                    uicm_list.append(uicm)
+                    uism_list.append(uism)
+                    uiconm_list.append(uiconm)
                     
-
                     #send wandb
-                    output = np.concatenate([low_img, gt_img, res_Imgs], axis=1) / 255
+                    output = np.concatenate([low_img, gt_img, res_Imgs], axis=1)*255
                     image = wandb.Image(output, caption="Low image, High Image, Enhanced Image")
-                    wout.append(image)
+                    #wout.append(image)
+                    if len(wout) <= 5:
+                        wout.append(image)
 
                     # show result
                     # output = np.concatenate([low_img, gt_img, res_Imgs, res_trick], axis=1) / 255
                     # plt.axis('off')
-                    # plt.imshow(output)
-                    # plt.show()
-                    #save_path = save_dir + name
-                    #cv2.imwrite(save_path, output * 255)
+                    #plt.imshow(output)
+                    #plt.show()
+                    #save_path = save_concate + name
+                    #cv2.imwrite(save_path, output)
 
-                    save_path =save_dir+ name+'.png'
-                    cv2.imwrite(save_path, res_Imgs)
+                    #save_path =save_dir + name
+                    #cv2.imwrite(save_path, res_Imgs*255)
                 
                 #Metrics
   
@@ -498,36 +504,74 @@ def Test(config: Dict,epoch):
                 avg_ssim = sum(ssim_list) / len(ssim_list)
                 avg_uiqm = sum(uiqm_list) / len(uiqm_list)
                 avg_uciqe = sum(uciqe_list) / len(uciqe_list)
+                avg_uicm = sum(uicm_list) / len(uicm_list)
+                avg_uism = sum(uism_list) / len(uism_list)
+                avg_uiconm = sum(uiconm_list) / len(uiconm_list)
+                print(f"""
+                        sum:
+                            uicm: {sum(uicm_list)}
+                            uism: {sum(uism_list)}
+                            uiconm:{sum(uiconm_list)} 
+                        len:
+                            uicm:{len(uicm_list)}
+                            uism: {len(uism_list)}
+                            uiconm: {len(uiconm_list)} 
+                      """)
 
                 # Wandb logs 
                 wandb.log({"Inferecia "+config.dataset:{
-                    "Average PSNR": avg_psnr,
-                    "Average SSIM": avg_ssim,
-                    "Average UIQM": avg_uiqm,
-                    "Average UCIQE": avg_uciqe,
-                    "PSNR": psnr,
-                    "SSIM": ssim_score,
-                    "Test from epoch": epoch,
-                    "Image ":wout
-                    }})
+                     "Average PSNR": avg_psnr,
+                     "Average SSIM": avg_ssim,
+                     "Average UIQM": avg_uiqm,
+                     "Average UCIQE": avg_uciqe,
+                     "Average UICM":avg_uicm,
+                     "Average UISM":avg_uism,
+                     "Average UIConM":avg_uiconm,
+                     "Test from epoch": epoch,
+                     "Image ":wout
+                     }})
 
                 #print('psnr_orgin_avg:', avg_psnr)
                 #print('ssim_orgin_avg:', avg_ssim)
-                print(f"Test From epoch {epoch} DONE")
+                
 
-                # f = open(save_txt_name, 'w+')
-                # f.write('\npsnr_orgin :')
-                # f.write(str(psnr_list))
-                # f.write('\nssim_orgin :')
-                # f.write(str(ssim_list))
+                f = open(save_txt_name, 'w+')
+                
+                f.write('\nuiqm_list :')
+                f.write(str(uiqm_list))
+                f.write('\nuciqe_list :')
+                f.write(str(uciqe_list))
+                f.write('\nuism_list :')
+                f.write(str(uism_list))
+                f.write('\nuicm_list :')
+                f.write(str(uicm_list))
+                f.write('\nuiconm_list :')
+                f.write(str(uiconm_list))
+                
 
-                # f.write('\npsnr_orgin_avg:')
-                # f.write(str(avg_psnr))
-                # f.write('\nssim_orgin_avg:')
-                # f.write(str(avg_ssim))
-                # f.close()
+                f.write('\npsnr_orgin_avg:')
+                f.write(str(avg_psnr))
+                f.write('\nssim_orgin_avg:')
+                f.write(str(avg_ssim))
+                f.write('\nuiqm_orgin_avg:')
+                f.write(str(avg_uiqm))
+                f.write('\nuciqe_orgin_avg:')
+                f.write(str(avg_uciqe))
+
+                f.write('\nuicm_orgin_avg:')
+                f.write(str(avg_uicm))
+                f.write('\nuism_orgin_avg:')
+                f.write(str(avg_uism))
+                f.write('\nuiconm_orgin_avg:')
+                f.write(str(avg_uiconm))
+                f.close()
+
+                print(f"""
+                      Test From epoch {epoch} DONE 
+                      """)
 
                 #return avg_psnr,avg_ssim
+    #plot_images(wout)
 
 def Inference(config: Dict,epoch):
 
@@ -583,8 +627,8 @@ def Inference(config: Dict,epoch):
                     snr_map = getSnrMap(lowlight_image, data_blur)
                     data_concate=torch.cat([data_color, snr_map], dim=1)
                     brightness_level=data_low.mean([1, 2, 3]).to(device) # b*1
-                    
-                    print(f"tipos: lowlight:{lowlight_image.dtype} dataconcate: {data_concate.dtype}, brithness:{brightness_level.dtype}")
+
+                    print(f"tipos: lowlight:{lowlight_image.dtype,lowlight_image.shape} dataconcate: {data_concate.dtype, data_concate.shape}, brithness:{brightness_level.dtype,brightness_level.shape}")
                     time_start = time.time()
                     sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
                                           unconditional_guidance_scale=1,ddim_step=config.ddim_step)

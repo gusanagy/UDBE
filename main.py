@@ -1,7 +1,7 @@
 import wandb
 import argparse
 from src import train
-from src.train import Test, Test, Inference
+from src.train import train, Test, Inference
 
 #import packages
 
@@ -12,7 +12,7 @@ if __name__== "__main__" :
   
         "DDP": False,
         "state": "eval", # or eval
-        "epoch": 1001,
+        "epoch": 1000,
         "batch_size":16,
         "T": 1000,
         "channel": 128,
@@ -43,8 +43,9 @@ if __name__== "__main__" :
     parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
     parser.add_argument('--inference_image', type=str, default=None)  #or eval
     parser.add_argument('--output_path', type=str, default="./output/")  #or eval
-    parser.add_argument('--wandb', type=bool, default=False)  #or False
-    parser.add_argument('--wandb_name', type=str, default="CLE_GlowDiff")
+    parser.add_argument('--wandb', type=bool, default=True)  #or False
+    parser.add_argument('--wandb_name', type=str, default="GLDiffusion")
+    parser.add_argument('--epoch', type=int, default=int(1000))
     #adicionar mais argumentos para o wandb
 
     config = parser.parse_args()
@@ -55,8 +56,8 @@ if __name__== "__main__" :
                 config=vars(config),
                 name= config.state +"_"+ config.wandb_name +"_"+ config.dataset,
                 tags=[config.state, config.dataset],
-                group="Branch glown_diffusion_train",
-                job_type="train",
+                group="Branch glown_diffusion_test",
+                job_type="test"
 
             ) 
     
@@ -65,8 +66,20 @@ if __name__== "__main__" :
     
     print(config)
 
+    print(config.epoch)
+
+    if config.state == 'eval':
+        Test(config, config.epoch)
+    elif config.state == 'train':
+        train(config)
+    elif config.state == 'inference':
+        Inference(config,config.pretrained_path)
+    else:
+        print("Invalid state")
     #train(config)#importar a funcao ou classe de papeline de treinamento== treino/teste e carregar as configs e rodar
-    Inference(config, 1000)
+    #Testi(config, 1000)
+    #python main.py --dataset "RUIE" --state "test" --epoch 500
+    #python main.py --dataset "UIEB" --state "train" --epoch 1000
 
     if config.wandb:
         wandb.finish()
