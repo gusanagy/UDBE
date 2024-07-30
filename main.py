@@ -11,7 +11,7 @@ if __name__== "__main__" :
     modelConfig = {
   
         "DDP": False,
-        "state": "eval", # or eval
+        "state": "inference", # or eval
         "epoch": 1000,
         "batch_size":16,
         "T": 1000,
@@ -41,25 +41,25 @@ if __name__== "__main__" :
     parser.add_argument('--dataset_path', type=str, default="./data/UDWdata/")
     parser.add_argument('--state', type=str, default="train")  #or eval
     parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
-    parser.add_argument('--inference_image', type=str, default=None)  #or eval
+    parser.add_argument('--inference_image', type=str, default="data/UDWdata/UIEB/val/206_img_.png")  #or eval
     parser.add_argument('--output_path', type=str, default="./output/")  #or eval
-    parser.add_argument('--wandb', type=bool, default=True)  #or False
+    parser.add_argument('--wandb', type=bool, default=False)  #or False
     parser.add_argument('--wandb_name', type=str, default="GLDiffusion")
     parser.add_argument('--epoch', type=int, default=int(1000))
     #adicionar mais argumentos para o wandb
 
     config = parser.parse_args()
     
-    if config.wandb:
-        wandb.init(
-                project=config.wandb_name,
-                config=vars(config),
-                name= config.state +"_"+ config.wandb_name +"_"+ config.dataset,
-                tags=[config.state, config.dataset],
-                group="Branch glown_diffusion_test",
-                job_type="test"
+    # if config.wandb:
+    #     wandb.init(
+    #             project=config.wandb_name,
+    #             config=vars(config),
+    #             name= config.state +"_"+ config.wandb_name +"_"+ config.dataset,
+    #             tags=[config.state, config.dataset],
+    #             group="Branch glown_diffusion_test",
+    #             job_type="test"
 
-            ) 
+    #         ) 
     
     for key, value in modelConfig.items():
         setattr(config, key, value)
@@ -73,7 +73,7 @@ if __name__== "__main__" :
     elif config.state == 'train':
         train(config)
     elif config.state == 'inference':
-        Inference(config,config.pretrained_path)
+        Inference(config,config.epoch)
     else:
         print("Invalid state")
     #train(config)#importar a funcao ou classe de papeline de treinamento== treino/teste e carregar as configs e rodar

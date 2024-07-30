@@ -545,13 +545,13 @@ def Test(config: Dict,epoch):
 def Inference(config: Dict,epoch):
 
     ###load the data
-    datapath_test = load_image_paths(dataset_path=config.dataset_path,dataset=config.dataset,split=False,task="val")[:1]
-    print(datapath_test)
-
+    #datapath_test = load_image_paths(dataset_path=config.dataset_path,dataset=config.dataset,split=False,task="val")[:1]
+    #print(datapath_test)
+    datapath_test = [config.inference_image]
     # load model and evaluate
     device = config.device_list[0]
     
-    dataload_test = load_data_inference(datapath_test)
+    dataload_test = load_data_test(datapath_test,datapath_test)
     dataloader = DataLoader(dataload_test, batch_size=1, num_workers=4,
                             drop_last=True, pin_memory=True)
 
@@ -559,11 +559,11 @@ def Inference(config: Dict,epoch):
                  attn=config.attn,
                  num_res_blocks=config.num_res_blocks, dropout=0.)
     #Mudar um pouco aqui para carregar o checkpoint do dataset escolhido
-    ckpt_path=config.output_path+'ckpt/'+ config.dataset +'/ckpt_'+str(epoch)+'_.pt'
-    ckpt = torch.load(ckpt_path,map_location='cpu')
+    #ckpt_path=config.output_path+'ckpt/'+ config.dataset +'/ckpt_'+str(epoch)+'_.pt'
+    ckpt = torch.load(config.pretrained_path ,map_location='cpu')
     model.load_state_dict({k.replace('module.', ''): v for k, v in ckpt.items()})
     print("model load weight done.")
-    save_dir=config.output_path+'result/'+ config.dataset+'/ctrl' +'/epoch/'+str(epoch)+'/'
+    save_dir=config.output_path+'result/'+ config.dataset+'/ctrl' +'/epoch/'+str(epoch)+'inf/'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -572,126 +572,63 @@ def Inference(config: Dict,epoch):
     f.close()
 
     image_num = 0
-    psnr_list = []
-    ssim_list = []
-    
-    uciqe_list = []
-    uiqm_list =[]
     imags = []
-
 
     model.eval()
     sampler = GaussianDiffusionSampler(
         model, config.beta_1, config.beta_T, config.T).to(device)
     #loss_fn_vgg=lpips.LPIPS(net='vgg')
-
     with torch.no_grad():
-        with tqdm( dataloader, dynamic_ncols=True) as tqdmDataLoader:
+        with tqdm(dataloader, dynamic_ncols=True) as tqdmDataLoader:
                 image_num = 0
-                for data_low, data_color,data_blur in tqdmDataLoader:
-                    
+                for data_low, data_high, data_color,data_blur,filename in tqdmDataLoader:
+                    name=filename[0].split('/')[-1]
+                    print('Image:',name)
+                    gt_image = data_high.to(device)
                     lowlight_image = data_low.to(device)
                     data_color = data_color.to(device)
                     data_blur=data_blur.to(device)
                     snr_map = getSnrMap(lowlight_image, data_blur)
                     data_concate=torch.cat([data_color, snr_map], dim=1)
-                    brightness_level=data_low.mean([1, 2, 3]).to(device) # b*1
 
-                    print(f"tipos: lowlight:{lowlight_image.dtype,lowlight_image.shape} dataconcate: {data_concate.dtype, data_concate.shape}, brithness:{brightness_level.dtype,brightness_level.shape}")
-                    time_start = time.time()
+                    #for i in range(-10, 10,1): 
+                        # light_high = torch.ones([1]) * i*0.1
+                        # light_high = light_high.to(device)
+                        
+                    brightness_level=gt_image.mean([1, 2, 3]) # b*1
+                    #time_start = time.time()
                     sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
                                           unconditional_guidance_scale=1,ddim_step=config.ddim_step)
-                    time_end=time.time()
-                    print('time cost:', time_end - time_start)
+                    #time_end=time.time()
+                    #print('time cost:', time_end - time_start)
 
-                    sampledImgs=(sampledImgs+1)/2
-                    #gt_image=(gt_image+1)/2
-                    #lowlight_image=(lowlight_image+1)/2
-                    res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
-                    #imags.append(data_low.cpu().numpy().transpose(1, 2, 0));imags.append(snr_map.cpu().numpy().transpose(1, 2, 0))
-                    #wandb.log({"Image Input": [wandb.Image(data_low.numpy(), caption="Input Image")]})
+                    
+                    
                     # for i in range(-3, 3): 
                     #     brightness_level = torch.ones([1]) * i
                     #     brightness_level = brightness_level.to(device)
                         
-                    #     time_start = time.time()
+                    #     #time_start = time.time()
                     #     sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
                     #                         unconditional_guidance_scale=1,ddim_step=config.ddim_step)
-                    #     time_end=time.time()
-                    #     print('time cost:', time_end - time_start)
+                    #     #time_end=time.time()
+                    #     #print('time cost:', time_end - time_start)
 
-                    #     sampledImgs=(sampledImgs+1)/2#ajuste da trasformacao da rede 
-                    #     res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]*255
-                    #     print(res_Imgs.shape)
-
-                    #     #wandb.log({"Image Inference": [wandb.Image(res_Imgs, caption="Image")]}) ### concertar esse negocio
-                    #     #save_path =save_dir+ config.data_name+'_level'+str(i)+'.png'
-                    #     #print("Image saved in: ",save_path)
-                    imags.append(res_Imgs)
-    plot_images(imags)
-
-
-                        #cv2.imwrite(save_path, res_Imgs)
-                    # for i in range(-8, 8): 
-                    #     light_high = torch.ones([1]) * i
-                    #     light_high = light_high.to(device)
-                        
-                    #     brightness_level=gt_image.mean([1, 2, 3]) # b*1
-                    #     time_start = time.time()
-                    #     sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
-                    #                         unconditional_guidance_scale=1,ddim_step=config.ddim_step)
-                    #     time_end=time.time()
-                    #     print('time cost:', time_end - time_start)
-
-                    #     sampledImgs=(sampledImgs+1)/2
-                    #     gt_image=(gt_image+1)/2
-                    #     lowlight_image=(lowlight_image+1)/2
-                    #     res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1] 
-                    #     gt_img=np.clip(gt_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
-                    #     low_img=np.clip(lowlight_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
-                        
-                        
-                        # # Compute METRICS
-                        # ## compute psnr
-                        # psnr = PSNR(res_Imgs, data_low)
-                        # #ssim = SSIM(res_Imgs, gt_img, channel_axis=2,data_range=255)
-                        # res_gray = rgb2gray(res_Imgs)
-                        # gt_gray = rgb2gray(data_low)
-
-                        # ssim_score = SSIM(res_gray, gt_gray, multichannel=True,data_range=1)\
-                        
-                        # #UIQM e UCIQE
-                        # uiqm,uciqe = nmetrics(res_Imgs)
+                    sampledImgs=(sampledImgs+1)/2
+                    gt_image=(gt_image+1)/2
+                    lowlight_image=(lowlight_image+1)/2
+                    res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1] 
+                    #gt_img=np.clip(gt_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
+                    #low_img=np.clip(lowlight_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
                     
-                                               
-                        # psnr_list.append(psnr)
-                        # ssim_list.append(ssim_score)
-                        # uiqm_list.append(uiqm)
-                        # uciqe_list.append(uciqe)
-                        
 
-                        # #send wandb
-                        # output = np.concatenate([low_img, gt_img, res_Imgs], axis=1) / 255
-                        # image = wandb.Image(output, caption="Low image, High Image, Control Enhanced Image")
-                        # wout.append(image)
-
-                        # show result
-                        # output = np.concatenate([low_img, gt_img, res_Imgs, res_trick], axis=1) / 255
-                        # plt.axis('off')
-                        # plt.imshow(output)
-                        # plt.show()
-                        #save_path = save_dir + name
-                        #cv2.imwrite(save_path, output * 255)
-
-                        # save_path =save_dir+ name+'.png'
-                        # cv2.imwrite(save_path, res_Imgs)
+                    #wandb.log({"Image Inference": [wandb.Image(res_Imgs, caption="Image")]}) ### concertar esse negocio
+                    #save_path =save_dir+ config.data_name+'_level'+str(i)+'.png'
+                    save_path =save_dir+ name +'_.png'
+                    print("Image saved in: ",save_path)
+                    cv2.imwrite(save_path, res_Imgs*255)
                 
                 #Metrics
-  
-                # avg_psnr = sum(psnr_list) / len(psnr_list)
-                # avg_ssim = sum(ssim_list) / len(ssim_list)
-                # avg_uiqm = sum(uiqm_list) / len(uiqm_list)
-                # avg_uciqe = sum(uciqe_list) / len(uciqe_list)
 
                 # # Wandb logs 
                 # wandb.log({"Inferecia "+config.dataset:{
@@ -699,23 +636,9 @@ def Inference(config: Dict,epoch):
                 #     "Image Ajuste ":wout
                 #     }})
 
-                # #print('psnr_orgin_avg:', avg_psnr)
-                # #print('ssim_orgin_avg:', avg_ssim)
-                # print(f"Test From epoch {epoch} DONE")
+                
 
-                # f = open(save_txt_name, 'w+')
-                # f.write('\npsnr_orgin :')
-                # f.write(str(psnr_list))
-                # f.write('\nssim_orgin :')
-                # f.write(str(ssim_list))
-
-                # f.write('\npsnr_orgin_avg:')
-                # f.write(str(avg_psnr))
-                # f.write('\nssim_orgin_avg:')
-                # f.write(str(avg_ssim))
-                # f.close()
-
-                #return avg_psnr,avg_ssim
+                
 
 
 

@@ -469,6 +469,7 @@ def logamee(ch, blocksize=8):
 
 
 def main():
+    #dataset val // dataset inferencia // dataset // author
     avaliacao = [ 
         ("/home/gusanagy/Documents/Glown-Diffusion/data/UDWdata/UIEB/val","/home/gusanagy/Documents/Glown-Diffusion/data/UDWdata/UIEB/val", "Claudio", "UIEB")
     ]
@@ -495,7 +496,10 @@ def main():
                     continue
 
                 try:
-                    uiqm, uciqe = nmetrics(corrected)
+                    #uiqm, uciqe = nmetrics(corrected)
+                    uciqe_ = uciqe(nargin=1,loc=corrected)#usarei este
+                    uiqm ,_ = nmetrics(corrected)#usarei o uiqm daqui
+
                     psnr_value = PSNR(gt_image, corrected) #, data_range=255)
                     ssim_value = SSIM(gt_image, corrected, multichannel=True, win_size=3) #, data_range=255)
                 except Exception as e:
@@ -503,7 +507,7 @@ def main():
                     continue
 
                 sumuiqm += uiqm
-                sumuciqe += uciqe
+                sumuciqe += uciqe_
                 psnr_sum += psnr_value
                 ssim_sum += ssim_value
                 N += 1
@@ -512,8 +516,13 @@ def main():
         muciqe = sumuciqe / N
         psnr_average = psnr_sum / N
         ssim_average = ssim_sum / N
-
+        #print(avaliacao[0][:-1],avaliacao[0][1])
         print(f'Average: uiqm={muiqm} uciqe={muciqe} psnr = {psnr_average} ssim = {ssim_average}')
+        file_path = os.path.join(avaliacao[0][1], avaliacao[0][:-1]+'metrics_output.txt')
+        print(file_path)
+        with open(file_path, 'w') as file:
+            file.write(f'{avaliacao[0][:-1]}\nAverage: uiqm={muiqm}\n uciqe={muciqe}\n psnr={psnr_average}\n ssim={ssim_average}\n')
 
+    print(f'Average: uiqm={muiqm} uciqe={muciqe} psnr={psnr_average} ssim={ssim_average}')
 if __name__ == '__main__':
     main()
