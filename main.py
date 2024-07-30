@@ -35,7 +35,7 @@ if __name__== "__main__" :
         "ddim_step":100
     }
 
-    ##Adicionar ao arg parse o transfer learning manual para o mask diffusion
+    ##Adicionar ao arg parse o transfer learning manual para o mask diffusions
     parser.add_argument('--dataset', type=str, default="all")
     parser.add_argument('--model', type=str, default="standart")#mask is the second option
     parser.add_argument('--dataset_path', type=str, default="./data/UDWdata/")

@@ -25,7 +25,7 @@ from .tool_func import *
 from tensorboardX import SummaryWriter #provavelmente irei retirar o suporte a tensorboard
 from skimage.metrics import peak_signal_noise_ratio as PSNR
 from skimage.metrics import structural_similarity as SSIM 
-from Metrics.metrics import nmetrics
+from Metrics.metrics import *
 import numpy as np
 import glob
 import random
@@ -42,7 +42,7 @@ import argparse
 from tqdm import tqdm
 import wandb
 import random
-from src.split_data import check_alpha_channel, load_image_paths
+from src.split_data import check_alpha_channel, load_image_paths, list_images
 import matplotlib.pyplot as plt
 
 
@@ -414,9 +414,6 @@ def Test(config: Dict,epoch):
     image_num = 0
     psnr_list = []
     ssim_list = []
-    uicm_list = []
-    uism_list = []
-    uiconm_list =[]
     #lpips_list=[]
     uciqe_list = []
     uiqm_list =[]
@@ -427,7 +424,7 @@ def Test(config: Dict,epoch):
     sampler = GaussianDiffusionSampler(
         model, config.beta_1, config.beta_T, config.T).to(device)
     #loss_fn_vgg=lpips.LPIPS(net='vgg')
-
+     
     with torch.no_grad():
         with tqdm( dataloader, dynamic_ncols=True) as tqdmDataLoader:
                 image_num = 0
@@ -469,16 +466,9 @@ def Test(config: Dict,epoch):
 
                     ssim_score = SSIM(res_gray, gt_gray, multichannel=True,data_range=1)\
                     
-                    #UIQM e UCIQE
-                    uiqm,uciqe, uicm, uism, uiconm = nmetrics(res_Imgs)
-                    
                     psnr_list.append(psnr)
                     ssim_list.append(ssim_score)
-                    uiqm_list.append(uiqm)
-                    uciqe_list.append(uciqe)
-                    uicm_list.append(uicm)
-                    uism_list.append(uism)
-                    uiconm_list.append(uiconm)
+                    
                     
                     #send wandb
                     output = np.concatenate([low_img, gt_img, res_Imgs], axis=1)*255
@@ -490,86 +480,65 @@ def Test(config: Dict,epoch):
                     # show result
                     # output = np.concatenate([low_img, gt_img, res_Imgs, res_trick], axis=1) / 255
                     # plt.axis('off')
-                    #plt.imshow(output)
-                    #plt.show()
-                    #save_path = save_concate + name
-                    #cv2.imwrite(save_path, output)
+                    # plt.imshow(output)
+                    # plt.show()
+                    save_path = save_concate + name
+                    cv2.imwrite(save_path, output)
 
-                    #save_path =save_dir + name
-                    #cv2.imwrite(save_path, res_Imgs*255)
-                
-                #Metrics
-  
-                avg_psnr = sum(psnr_list) / len(psnr_list)
-                avg_ssim = sum(ssim_list) / len(ssim_list)
-                avg_uiqm = sum(uiqm_list) / len(uiqm_list)
-                avg_uciqe = sum(uciqe_list) / len(uciqe_list)
-                avg_uicm = sum(uicm_list) / len(uicm_list)
-                avg_uism = sum(uism_list) / len(uism_list)
-                avg_uiconm = sum(uiconm_list) / len(uiconm_list)
-                print(f"""
-                        sum:
-                            uicm: {sum(uicm_list)}
-                            uism: {sum(uism_list)}
-                            uiconm:{sum(uiconm_list)} 
-                        len:
-                            uicm:{len(uicm_list)}
-                            uism: {len(uism_list)}
-                            uiconm: {len(uiconm_list)} 
-                      """)
+                    save_path =save_dir + name
+                    cv2.imwrite(save_path, res_Imgs*255)
+                 
+    #Metrics
+    #UIQM e UCIQE
+    print("Calculationg Metrics\n")
+    a = list_images(save_dir)
+    print(f"calculando {len(a)} amostras")
+    
+    for path in a:
+        res_Imgs = cv2.imread(path)
+        uiqm,_= nmetrics(res_Imgs)
+        uciqe_ = uciqe(nargin=1,loc=res_Imgs)
+        print(f"uiqm: {uiqm}, uciqe: {uciqe_}")
+        uiqm_list.append(uiqm)
+        uciqe_list.append(uciqe_)
+    #AVERAGE SSIM PSNR UICM UCIQE
+    avg_psnr = sum(psnr_list) / len(psnr_list)
+    avg_ssim = sum(ssim_list) / len(ssim_list)
+    avg_uiqm = sum(uiqm_list) / len(uiqm_list)
+    avg_uciqe = sum(uciqe_list) / len(uciqe_list)                 
 
-                # Wandb logs 
-                wandb.log({"Inferecia "+config.dataset:{
+    f = open(save_txt_name, 'w+')
+              
+    """ f.write('\nuiqm_list :')
+    f.write(str(uiqm_list))
+    f.write('\nuciqe_list :')
+    f.write(str(uciqe_list))
+    f.write('\nuism_list :') """
+
+    f.write('\npsnr_orgin_avg:')
+    f.write(str(avg_psnr))
+    f.write('\nssim_orgin_avg:')
+    f.write(str(avg_ssim))
+    f.write('\nuiqm_orgin_avg:')
+    f.write(str(avg_uiqm))
+    f.write('\nuciqe_orgin_avg:')
+    f.write(str(avg_uciqe))
+
+    f.close()
+
+    
+    # Wandb logs 
+    wandb.log({"Test "+config.dataset:{
                      "Average PSNR": avg_psnr,
                      "Average SSIM": avg_ssim,
                      "Average UIQM": avg_uiqm,
                      "Average UCIQE": avg_uciqe,
-                     "Average UICM":avg_uicm,
-                     "Average UISM":avg_uism,
-                     "Average UIConM":avg_uiconm,
                      "Test from epoch": epoch,
                      "Image ":wout
                      }})
-
-                #print('psnr_orgin_avg:', avg_psnr)
-                #print('ssim_orgin_avg:', avg_ssim)
-                
-
-                f = open(save_txt_name, 'w+')
-                
-                f.write('\nuiqm_list :')
-                f.write(str(uiqm_list))
-                f.write('\nuciqe_list :')
-                f.write(str(uciqe_list))
-                f.write('\nuism_list :')
-                f.write(str(uism_list))
-                f.write('\nuicm_list :')
-                f.write(str(uicm_list))
-                f.write('\nuiconm_list :')
-                f.write(str(uiconm_list))
-                
-
-                f.write('\npsnr_orgin_avg:')
-                f.write(str(avg_psnr))
-                f.write('\nssim_orgin_avg:')
-                f.write(str(avg_ssim))
-                f.write('\nuiqm_orgin_avg:')
-                f.write(str(avg_uiqm))
-                f.write('\nuciqe_orgin_avg:')
-                f.write(str(avg_uciqe))
-
-                f.write('\nuicm_orgin_avg:')
-                f.write(str(avg_uicm))
-                f.write('\nuism_orgin_avg:')
-                f.write(str(avg_uism))
-                f.write('\nuiconm_orgin_avg:')
-                f.write(str(avg_uiconm))
-                f.close()
-
-                print(f"""
-                      Test From epoch {epoch} DONE 
-                      """)
-
+    print(f"""
+            Test From epoch {epoch} DONE 
+            """)
                 #return avg_psnr,avg_ssim
     #plot_images(wout)
 

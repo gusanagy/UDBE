@@ -108,3 +108,21 @@ def load_image_paths(dataset_path, dataset="all",task="train",split=False):
         return train_paths, test_paths
     else:
         return image_paths
+    
+
+def list_images(directory):
+    """
+    Lists all images in the given directory with extensions .png or .jpg.
+
+    :param directory: The directory to search for images.
+    :return: A list of file paths to the images.
+    """
+    image_extensions = ('.png', '.jpg', '.jpeg')
+    image_paths = []
+
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.lower().endswith(image_extensions):
+                image_paths.append(os.path.join(root, file))
+
+    return image_paths

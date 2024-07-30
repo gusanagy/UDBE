@@ -33,8 +33,9 @@ import numpy as np
 
 
 def uciqe(nargin,loc):
-    img_bgr = cv2.imread(loc)        # Used to read image files
-    img_lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)  # Transform to Lab color space
+    #img_bgr = cv2.imread(loc)        # Used to read image files
+     
+    img_lab = cv2.cvtColor(loc, cv2.COLOR_BGR2LAB)  # Transform to Lab color space
 
     if nargin == 1:                                 # According to training result mentioned in the paper:
         coe_metric = [0.4680, 0.2745, 0.2576]      # Obtained coefficients are: c1=0.4680, c2=0.2745, c3=0.2576.
@@ -376,7 +377,7 @@ def nmetrics(a):
     uiconm = logamee(gray)
 
     uiqm = p1 * uicm + p2 * uism + p3 * uiconm
-    return uiqm,uciqe, uicm, uism, uiconm
+    return uiqm,uciqe
 
 def eme(ch,blocksize=8):
 
