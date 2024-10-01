@@ -4,7 +4,7 @@ Authors:
 Institutions: 
 
 # Data
-<!-- 
+
  ```
  UWSData
 ├── RUIE
@@ -27,20 +27,8 @@ Institutions:
 └── UIEB
       ├── train
       └── val
-``` -->
- ```
- UWSData
-      ├── SUIM
-      │    |── train
-      |    |    ├── images
-      |    |    └── masks
-      │    └── val
-      |         ├── images
-      |         └── masks
-      └── UIEB
-            ├── train
-            └── val
-```
+``` 
+
 
 ## Uso do Dataset
 
@@ -50,7 +38,7 @@ link para o dataset utilizado UWDdata. Crie a pasta data, extraia o dataset. Mov
 
 * [UWData Download](https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing)
 
-* [Download Checkpoints]()
+* [Download Checkpoints](https://huggingface.co/Gusanagy/UDBE-Unsupervised-Diffusion-based-Brightness-Enhancement-in-Underwater-Images/tree/main)
 
 
 # Checkpoint
@@ -100,10 +88,4 @@ python train_mask.py --pretrained_path ckpt/lol.pt  #finetune Mask CLE Diffusion
 python test_mask.py --pretrained_path ckpt/Mask_CLE.pt --input_path data/Mask_CLE_cases/opera.png --mask_path data/Mask_CLE_cases/opera_mask.png --data_name opera
 ```
 */ -->
-
-
-# Acknowledgement
-This work is mainly built on [DenoisingDiffusionProbabilityModel-ddpm](https://github.com/zoubohao/DenoisingDiffusionProbabilityModel-ddpm-). Thanks a lot to authors for sharing!
-
-# Citation
 
