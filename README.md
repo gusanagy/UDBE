@@ -107,3 +107,10 @@ This work is mainly built on [DenoisingDiffusionProbabilityModel-ddpm](https://g
 
 # Citation
 
+
+# To-do
+[ ] Organizar o reopsitorio
+[ ] Disponibilizar checkpoints
+[ ] ajustar notebooks de teste do modelo 
+
+

@@ -377,7 +377,7 @@ def nmetrics(a):
     uiconm = logamee(gray)
 
     uiqm = p1 * uicm + p2 * uism + p3 * uiconm
-    return uiqm,uciqe
+    return uiqm,uciqe,uism
 
 def eme(ch,blocksize=8):
 
@@ -481,7 +481,7 @@ def main():
         result_dirs = os.listdir(result_path)
         result_gt = os.listdir(gt)
 
-        sumuiqm, sumuciqe = 0.,0.
+        sumuiqm, sumuciqe,sumuism = 0.,0.,0.
         psnr_sum, ssim_sum = 0., 0.
         N=0
 
@@ -498,7 +498,7 @@ def main():
                 try:
                     #uiqm, uciqe = nmetrics(corrected)
                     uciqe_ = uciqe(nargin=1,loc=corrected)#usarei este
-                    uiqm ,_ = nmetrics(corrected)#usarei o uiqm daqui
+                    uiqm ,_, uism = nmetrics(corrected)#usarei o uiqm daqui
 
                     psnr_value = PSNR(gt_image, corrected) #, data_range=255)
                     ssim_value = SSIM(gt_image, corrected, multichannel=True, win_size=3) #, data_range=255)
@@ -510,19 +510,21 @@ def main():
                 sumuciqe += uciqe_
                 psnr_sum += psnr_value
                 ssim_sum += ssim_value
+                sumuism += uism
                 N += 1
 
         muiqm = sumuiqm / N
         muciqe = sumuciqe / N
+        muism = sumuism / N
         psnr_average = psnr_sum / N
         ssim_average = ssim_sum / N
         #print(avaliacao[0][:-1],avaliacao[0][1])
-        print(f'Average: uiqm={muiqm} uciqe={muciqe} psnr = {psnr_average} ssim = {ssim_average}')
-        file_path = os.path.join(avaliacao[0][1], avaliacao[0][:-1]+'metrics_output.txt')
-        print(file_path)
-        with open(file_path, 'w') as file:
-            file.write(f'{avaliacao[0][:-1]}\nAverage: uiqm={muiqm}\n uciqe={muciqe}\n psnr={psnr_average}\n ssim={ssim_average}\n')
+        print(f'Average: uiqm={muiqm} uciqe={muciqe} uism:{muism} psnr = {psnr_average} ssim = {ssim_average}')
+        # file_path = os.path.join(avaliacao[0][1], avaliacao[0][:-1]+'metrics_output.txt')
+        # print(file_path)
+        # with open(file_path, 'w') as file:
+        #     file.write(f'{avaliacao[0][:-1]}\nAverage: uiqm={muiqm}\n uciqe={muciqe}\n psnr={psnr_average}\n ssim={ssim_average}\n')
 
-    print(f'Average: uiqm={muiqm} uciqe={muciqe} psnr={psnr_average} ssim={ssim_average}')
+    # print(f'Average: uiqm={muiqm} uciqe={muciqe} psnr={psnr_average} ssim={ssim_average}')
 if __name__ == '__main__':
     main()
