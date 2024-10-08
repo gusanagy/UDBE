@@ -1,9 +1,14 @@
 # **BRDM: Brightness Restoration in Underwater Images from Diffusion Models**
-Authors: 
+<!--
+Adicionar o link do lattes em todos 
+-->
+Tatiana Tais Schein, tatischein@furg.br | Gustavo Pereira de Almeira, gustavo.pereira.furg@furg.br | Stephanie Loi Briao, stephanie.loi@furg.br | Felipe Gomes de Oliveira, felipeoliveira@ufam.edu.br | Rodrigo Andrade de Bem, rodrigo.bem@gmail.com | Paulo L. J. Drews-Jr, paulodrews@furg.br
 
-Institutions: 
 
-# Data
+
+Activities in underwater environments are paramount in several scenarios, which drives the continuous development of underwater image enhancement techniques. A major challenge in this domain is the depth at which images are captured, with increasing depth resulting in a darker environment. Most existing methods for underwater image enhancement focus on noise removal and color adjustment, with few works dedicated to brightness  enhancement. This work introduces a novel unsupervised learning approach to underwater image enhancement using a diffusion model. Our method, called UDBE, is based on conditional diffusion to maintain the brightness  etails of the unpaired input images. The input image is combined with a color map and a SignalNoise Relation map (SNR) to ensure stable training and prevent  color distortion in the output images. The results demonstrate that our approach achieves an impressive accuracy rate in the datasets UIEB, SUIM and RUIE, well-established underwater image benchmarks. Additionally, the experiments validate the robustness of our approach, regarding  he image quality metrics PSNR, SSIM, UIQM, and UISM, indicating the good performance of the brightness enhancement process.
+
+## Data
 
  ```
  UWSData
@@ -30,7 +35,7 @@ Institutions:
 ``` 
 
 
-## Uso do Dataset
+## Dataset
 
 Este dataset é organizado para facilitar o treinamento e a validação de modelos de aprendizado de máquina. As imagens estão divididas em conjuntos de treino (`train`) e validação (`val`) para cada categoria específica. Certifique-se de utilizar as imagens dos diretórios correspondentes conforme necessário para seus experimentos.
 
@@ -38,12 +43,15 @@ link para o dataset utilizado UWDdata. Crie a pasta data, extraia o dataset. Mov
 
 * [UWData Download](https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing)
 
+
+## Checkpoint
+
+Our checkpoint file is stored in huggingface. You need to download the file, unzip the weights for our three datasets and move them to the output/ckpt paste for easy use of the pretrained weights. The notebook [avaliacao.ipynb](avaliacao.ipynb) can be used for test our data and download the weights properly to easy test. 
+
 * [Download Checkpoints](https://huggingface.co/Gusanagy/UDBE-Unsupervised-Diffusion-based-Brightness-Enhancement-in-Underwater-Images/tree/main)
 
 
-# Checkpoint
-
-# Setup
+## Setup
 ```python
 pip install -r requirements.txt
 ```
@@ -56,7 +64,7 @@ conda env create -f CLEDiff_bkp.yaml --name CLEDiff
 
 for conda envoiriments
 
-# Usage
+## Usage
 <!--Our diffusion code structure is based on the original implementation of DDPM. Increasing the size of the U-Net may lead to better results. About training iteration. The training with 5000 iterations has converged quite well. We recommend training for 10,000 iterations to achieve better performance, and you can select the best-performing training iterations.We test code on one RTX 3090 GPU. The training time is about 1-2 days.*/ -->
  Nosso codigo foi treinado em um computador com duas placas NVIDIA TITAN X com 24gb de gpu no total.  
 
@@ -71,10 +79,10 @@ python main.py --pretrained_path  --dataset "UIEB" -- state "eval" --pretrained_
 python main.py --pretrained_path  --dataset "SUIM" -- state "inference" --inference_image " "  --pretrained_path "1000.pt"
 python main.py --pretrained_path  --dataset "UIEB" -- state "inference" --inference_image " " --pretrained_path "1000.pt"
 
-
 ```
 
 Os testes podem ser feitos no notebook [avaliacao.ipynb](avaliacao.ipynb). Assim como a visualização das imagens dos respectivos datasets. Ao rodar este notebook existem opções para baixar e gerar automaticamente as pastas, datasets e checkpoints necessários para rodar o modelo.
+
 <!--
 # Mask CLE Diffusion
 Mask CLE Diffusion finetunes lol checkpoint. In our experiments, lol checkpoint is better than mit-adobe-5K checkpoint.
