@@ -1,7 +1,7 @@
 # **BRDM: Brightness Restoration in Underwater Images from Diffusion Models**
-Authors: 
+Authors: Tatiana Taís Schein, Gustavo Pereira de Almeira, Stephanie Loi Brião, Rodrigo Andrade de Bem, Felipe Gomes de Oliveira and Paulo L. J. Drews-Jr.
 
-Institutions: 
+Institutions: Universidade Federal do Rio Grande and Universidade Federal do Amazonas.
 
 # Data
 
@@ -30,13 +30,14 @@ Institutions:
 ``` 
 
 
-## Uso do Dataset
+## Using the Dataset
 
-Este dataset é organizado para facilitar o treinamento e a validação de modelos de aprendizado de máquina. As imagens estão divididas em conjuntos de treino (`train`) e validação (`val`) para cada categoria específica. Certifique-se de utilizar as imagens dos diretórios correspondentes conforme necessário para seus experimentos.
+This dataset is organized to facilitate the training and validation of machine learning models. The images are divided into training (`train`) and validation (`val`) sets for each specific category. Make sure to use the images from the corresponding directories as needed for your experiments.
 
-link para o dataset utilizado UWDdata. Crie a pasta data, extraia o dataset. Mova a pasta UWData para o diretorio data. Teste o codigo com o dataset utilizando a flag dataset para selecionar o desejado ou utilizando todos nao setando esse parametro. Descompacte e carregue os checkpoints atraves dos parametros do script. 
+Link to the dataset used UWDdata: https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing
 
-* [UWData Download](https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing)
+Create a folder named `data` and extract the dataset into it. Move the `UWData` folder to the `data` directory. Test the code with the dataset by using the `--dataset` flag to select the desired dataset, or process all datasets by leaving this parameter unset. Unzip and load the checkpoints using the script's parameters.
+
 
 * [Download Checkpoints](https://huggingface.co/Gusanagy/UDBE-Unsupervised-Diffusion-based-Brightness-Enhancement-in-Underwater-Images/tree/main)
 
