@@ -59,7 +59,7 @@ for conda envoiriments
 
 # Usage
 <!--Our diffusion code structure is based on the original implementation of DDPM. Increasing the size of the U-Net may lead to better results. About training iteration. The training with 5000 iterations has converged quite well. We recommend training for 10,000 iterations to achieve better performance, and you can select the best-performing training iterations.We test code on one RTX 3090 GPU. The training time is about 1-2 days.*/ -->
- Nosso codigo foi treinado em um computador com duas placas NVIDIA TITAN X com 24gb de gpu no total.  
+Our code was trained on a computer with two NVIDIA TITAN X GPUs, totaling 24GB of GPU memory.
 
 ```
 python #train from scratch, you can change setting in modelConfig 
@@ -75,7 +75,7 @@ python main.py --pretrained_path  --dataset "UIEB" -- state "inference" --infere
 
 ```
 
-Os testes podem ser feitos no notebook [avaliacao.ipynb](avaliacao.ipynb). Assim como a visualização das imagens dos respectivos datasets. Ao rodar este notebook existem opções para baixar e gerar automaticamente as pastas, datasets e checkpoints necessários para rodar o modelo.
+The tests can be performed in the notebook [avaliacao.ipynb](avaliacao.ipynb).Similarly, the visualization of the images from the respective datasets can be done. Running this notebook provides options to automatically download and generate the necessary folders, datasets, and checkpoints to run the model.
 <!--
 # Mask CLE Diffusion
 Mask CLE Diffusion finetunes lol checkpoint. In our experiments, lol checkpoint is better than mit-adobe-5K checkpoint.
