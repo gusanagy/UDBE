@@ -34,7 +34,7 @@ Institutions: Universidade Federal do Rio Grande and Universidade Federal do Ama
 
 This dataset is organized to facilitate the training and validation of machine learning models. The images are divided into training (`train`) and validation (`val`) sets for each specific category. Make sure to use the images from the corresponding directories as needed for your experiments.
 
-Link to the dataset used UWDdata: https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing
+Link to the dataset used UWDdata: [UWDdata](https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing)
 
 Create a folder named `data` and extract the dataset into it. Move the `UWData` folder to the `data` directory. Test the code with the dataset by using the `--dataset` flag to select the desired dataset, or process all datasets by leaving this parameter unset. Unzip and load the checkpoints using the script's parameters.
 
