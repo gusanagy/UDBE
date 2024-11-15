@@ -90,3 +90,5 @@ python test_mask.py --pretrained_path ckpt/Mask_CLE.pt --input_path data/Mask_CL
 ```
 */ -->
 
+# ACKNOWLEDGMENT
+This study was funded, in part, by the São Paulo Research Foundation (FAPESP), Brazil, under Process Number 2024/10523-5. The authors would also like to thank the PRH-ANP and CNPQ organizations for their research support and financial assistance.
