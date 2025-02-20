@@ -58,9 +58,8 @@ python main.py --pretrained_path  --dataset "UIEB" -- state "inference" --infere
 
 ```
 # Testing and Visualization
-<!--
+
 Run the script ('avaliacao.ipynb') . This script will automatically download the dataset and weights, and it includes a cell to run inference for each dataset. Similarly, the visualization of the images from the respective datasets can be done using this script.
-*/ -->
 
 # ACKNOWLEDGMENT
 This study was funded, in part, by the São Paulo Research Foundation (FAPESP), Brazil, under Process Number 2024/10523-5. The authors would also like to thank the PRH-ANP and CNPQ organizations for their research support and financial assistance.
