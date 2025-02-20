@@ -5,6 +5,8 @@ Institutions: Universidade Federal do Rio Grande and Universidade Federal do Ama
 
 # Data
 
+This dataset is organized to facilitate the training and validation of machine learning models. The images are divided into training (`train`) and validation (`val`) sets for each specific category. Make sure to use the images from the corresponding directories as needed for your experiments.
+
  ```
  UWSData
 ├── RUIE
@@ -29,33 +31,14 @@ Institutions: Universidade Federal do Rio Grande and Universidade Federal do Ama
       └── val
 ``` 
 
-
-## Using the Dataset
-
-This dataset is organized to facilitate the training and validation of machine learning models. The images are divided into training (`train`) and validation (`val`) sets for each specific category. Make sure to use the images from the corresponding directories as needed for your experiments.
-
-Link to the dataset used UWDdata: [UWDdata](https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing)
-
-Create a folder named `data` and extract the dataset into it. Move the `UWData` folder to the `data` directory. Test the code with the dataset by using the `--dataset` flag to select the desired dataset, or process all datasets by leaving this parameter unset. Unzip and load the checkpoints using the script's parameters.
-
-
-* [Download Checkpoints](https://huggingface.co/Gusanagy/UDBE-Unsupervised-Diffusion-based-Brightness-Enhancement-in-Underwater-Images/tree/main)
-
-
-# Checkpoint
-
 # Setup
-```python
-pip install -r requirements.txt
-```
 
-or 
+First, create the environment with the necessary requirements:
 
-```conda
-conda env create -f CLEDiff_bkp.yaml --name CLEDiff
-```
-
-for conda envoiriments
+conda create --name CLE pillow scikit-image matplotlib numpy tensorboardX tensorboard
+conda activate CLE
+conda install pytorch torchvision torchaudio cudatoolkit=12.1 -c pytorch
+pip install lpips albumentations kornia gdown opencv-python wandb
 
 # Usage
 <!--Our diffusion code structure is based on the original implementation of DDPM. Increasing the size of the U-Net may lead to better results. About training iteration. The training with 5000 iterations has converged quite well. We recommend training for 10,000 iterations to achieve better performance, and you can select the best-performing training iterations.We test code on one RTX 3090 GPU. The training time is about 1-2 days.*/ -->
@@ -74,20 +57,9 @@ python main.py --pretrained_path  --dataset "UIEB" -- state "inference" --infere
 
 
 ```
-
-The tests can be performed in the notebook [avaliacao.ipynb](avaliacao.ipynb).Similarly, the visualization of the images from the respective datasets can be done. Running this notebook provides options to automatically download and generate the necessary folders, datasets, and checkpoints to run the model.
+# Testing and Visualization
 <!--
-# Mask CLE Diffusion
-Mask CLE Diffusion finetunes lol checkpoint. In our experiments, lol checkpoint is better than mit-adobe-5K checkpoint.
-
-We show some inference cases in 'data/Mask_CLE_cases'. Welcome to use your cases to test the performance.
- /*We show some inference cases in 'data/Mask_CLE_cases'. Welcome to use your cases to test the performance.
-
-```python
-python mask_generation.py   #generate masks for training
-python train_mask.py --pretrained_path ckpt/lol.pt  #finetune Mask CLE Diffusion
-python test_mask.py --pretrained_path ckpt/Mask_CLE.pt --input_path data/Mask_CLE_cases/opera.png --mask_path data/Mask_CLE_cases/opera_mask.png --data_name opera
-```
+Run the script ('avaliacao.ipynb') . This script will automatically download the dataset and weights, and it includes a cell to run inference for each dataset. Similarly, the visualization of the images from the respective datasets can be done using this script.
 */ -->
 
 # ACKNOWLEDGMENT
