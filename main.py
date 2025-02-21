@@ -20,7 +20,7 @@ if __name__ == "__main__":
     # Configurações básicas do modelo
     modelConfig = {
         "DDP": False,
-        "state": "inference",  # or "eval"
+        #"state": "inference", # or eval
         "epoch": 1000,
         "batch_size": 16,
         "T": 1000,
@@ -45,13 +45,13 @@ if __name__ == "__main__":
     # Configurações de argparse
     parser = argparse.ArgumentParser(description="Pipeline de Treinamento/Inferência")
     parser.add_argument('--dataset', type=str, default="all")
-    parser.add_argument('--model', type=str, default="standart")  # 'mask' é a outra opção
-    parser.add_argument('--dataset_path', type=str, default="./data/UDWdata/")
-    parser.add_argument('--state', type=str, default="train")  # or "eval"
-    parser.add_argument('--pretrained_path', type=str, default=None)  # Caminho para modelo pré-treinado
-    parser.add_argument('--inference_image', type=str, default="data/UDWdata/UIEB/val/206_img_.png")
-    parser.add_argument('--output_path', type=str, default="./output/")
-    parser.add_argument('--wandb', type=bool, default=False)
+    parser.add_argument('--model', type=str, default="standart")#mask is the second option
+    parser.add_argument('--dataset_path', type=str, default="./dataset/UDWdata/")
+    parser.add_argument('--state', type=str, default="train")  #or eval
+    parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
+    parser.add_argument('--inference_image', type=str, default="data/UDWdata/UIEB/val/205_img_.png")  #or eval
+    parser.add_argument('--output_path', type=str, default="./output/")  #or eval
+    parser.add_argument('--wandb', type=bool, default=False)  #or False
     parser.add_argument('--wandb_name', type=str, default="GLDiffusion")
     parser.add_argument('--epoch', type=int, default=1000)
 
@@ -75,8 +75,9 @@ if __name__ == "__main__":
     # Debugging: Imprime as configurações carregadas
     print(config)
 
-    # Lógica de execução baseada no estado
-    if config.state == 'eval':
+    print(config.epoch)
+
+    if config.state == 'val':
         Test(config, config.epoch)
     elif config.state == 'train':
         train(config)

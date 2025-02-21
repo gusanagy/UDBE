@@ -1,4 +1,3 @@
-
 import sys
 import os
 
@@ -112,7 +111,6 @@ class load_data(data.Dataset):
         data_blur = torch.Tensor(data_blur).float().permute(2, 0, 1)
 
         return [data_low, data_high,data_color,data_blur]
-
 
 
 class load_data_test(data.Dataset):
@@ -233,6 +231,9 @@ def train(config: Dict):
         dist.init_process_group(backend='nccl')
         device = torch.device("cuda", local_rank)
     
+    print("INICIANDO TREINO")
+
+
     ###load the data
     datapath_train = load_image_paths(config.dataset_path,config.dataset)
     dataload_train=load_data(datapath_train, datapath_train)
@@ -340,15 +341,16 @@ def train(config: Dict):
                 #                             "vgg_loss":vgg_num,
                 #                               }, num)
                 #Wandb Logs 
-                wandb.log({"Train":{
-                    "epoch": e,
-                    "Loss: ": loss_num,
-                    "MSE Loss":mse_num,
-                    "Brithness_loss":exp_num,
-                    "COL Loss":col_num,
-                    'SSIM Loss':ssim_num,
-                    'perceptual Loss':perceptual_num,
-                    }})
+                if config.wandb:
+                    wandb.log({"Train":{
+                        "epoch": e,
+                        "Loss: ": loss_num,
+                        "MSE Loss":mse_num,
+                        "Brithness_loss":exp_num,
+                        "COL Loss":col_num,
+                        'SSIM Loss':ssim_num,
+                        'perceptual Loss':perceptual_num,
+                        }})
                 num+=1
                 #Adicionar uma flag do wandb para acompanhar a loss// adaptar o summary writer do tensor board
 
@@ -373,32 +375,26 @@ def train(config: Dict):
             #f.write(write_data)
             #f.close()
 
-def Test(config: Dict,epoch):
+def Test(config: Dict, epoch):
+    datapath_test = load_image_paths(config.dataset_path, config.dataset, task="val", split=False)
+    print(f"Tamanho do dataset : {len(datapath_test)}")
 
-    ###load the data
-    datapath_test = load_image_paths(config.dataset_path,config.dataset,task="val",split=False)
-    print(len(datapath_test))
     # load model and evaluate
     device = config.device_list[0]
-    # test_low_path=config.dataset_path+r'*.png'    
-    # test_high_path=config.dataset_path+r'*.png' 
 
-    # datapath_test_low = glob.glob( test_low_path)
-    # datapath_test_high = glob.glob(test_high_path)
-
-    dataload_test = load_data_test(datapath_test,datapath_test)
+    dataload_test = load_data_test(datapath_test, datapath_test)
     dataloader = DataLoader(dataload_test, batch_size=1, num_workers=4,
                             drop_last=True, pin_memory=True)
-
 
     model = UNet(T=config.T, ch=config.channel, ch_mult=config.channel_mult,
                  attn=config.attn,
                  num_res_blocks=config.num_res_blocks, dropout=0.)
-    #Mudar um pouco aqui para carregar o checkpoint do dataset escolhido
-    ckpt_path=config.output_path+'ckpt/'+ config.dataset +'/ckpt_'+str(epoch)+'_.pt'
-    ckpt = torch.load(ckpt_path,map_location='cpu')
+    
+    ckpt_path = config.pretrained_path if config.pretrained_path else config.output_path+'ckpt/'+ config.dataset +'/ckpt_'+str(epoch)+'_.pt'
+    ckpt = torch.load(ckpt_path, map_location='cpu')
     model.load_state_dict({k.replace('module.', ''): v for k, v in ckpt.items()})
     print("model load weight done.")
+    
     save_dir=config.output_path+'result/'+ config.dataset +'/epoch/'+str(epoch)+'/'
     save_concate=config.output_path+'result/'+ config.dataset +'/epoch/'+str(epoch)+'concate'+'/'
     if not os.path.exists(save_dir):
@@ -407,114 +403,92 @@ def Test(config: Dict,epoch):
         os.makedirs(save_concate)
 
     print(f"savedir: {save_dir}, ckpt_path: {ckpt_path}")
-    save_txt_name =save_dir + 'res.txt'
+    save_txt_name = save_dir + 'res.txt'
     f = open(save_txt_name, 'w+')
     f.close()
         
-    image_num = 0
     psnr_list = []
     ssim_list = []
-    #lpips_list=[]
     uciqe_list = []
-    uiqm_list =[]
+    uiqm_list = []
     wout = []
-
  
     model.eval()
     sampler = GaussianDiffusionSampler(
         model, config.beta_1, config.beta_T, config.T).to(device)
-    #loss_fn_vgg=lpips.LPIPS(net='vgg')
      
+    # Processar todas as imagens e coletar resultados
+    results = []
     with torch.no_grad():
-        with tqdm( dataloader, dynamic_ncols=True) as tqdmDataLoader:
-                image_num = 0
-                for data_low, data_high, data_color,data_blur,filename in tqdmDataLoader:
-                    name=filename[0].split('/')[-1]
-                    print('Image:',name)
-                    gt_image = data_high.to(device)
-                    lowlight_image = data_low.to(device)
-                    data_color = data_color.to(device)
-                    data_blur=data_blur.to(device)
-                    snr_map = getSnrMap(lowlight_image, data_blur)
-                    data_concate=torch.cat([data_color, snr_map], dim=1)
+        for data_low, data_high, data_color, data_blur, filename in tqdm(dataloader, desc="Testing model", total=len(dataloader)):
+            name = filename[0].split('/')[-1]
+            
+            gt_image = data_high.to(device)
+            lowlight_image = data_low.to(device)
+            data_color = data_color.to(device)
+            data_blur = data_blur.to(device)
+            snr_map = getSnrMap(lowlight_image, data_blur)
+            data_concate = torch.cat([data_color, snr_map], dim=1)
 
-                    #for i in range(-10, 10,1): 
-                        # light_high = torch.ones([1]) * i*0.1
-                        # light_high = light_high.to(device)
-                        
-                    brightness_level=gt_image.mean([1, 2, 3]) # b*1
-                    time_start = time.time()
-                    sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
-                                          unconditional_guidance_scale=1,ddim_step=config.ddim_step)
-                    time_end=time.time()
-                    print('time cost:', time_end - time_start)
-
-                    sampledImgs=(sampledImgs+1)/2
-                    gt_image=(gt_image+1)/2
-                    lowlight_image=(lowlight_image+1)/2
-                    res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1] 
-                    gt_img=np.clip(gt_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
-                    low_img=np.clip(lowlight_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
-                    
-                    
-                    # Compute METRICS
-                    ## compute psnr
-                    psnr = PSNR(res_Imgs, gt_img)
-                    #ssim = SSIM(res_Imgs, gt_img, channel_axis=2,data_range=255)
-                    res_gray = rgb2gray(res_Imgs)
-                    gt_gray = rgb2gray(gt_img)
-
-                    ssim_score = SSIM(res_gray, gt_gray, multichannel=True,data_range=1)\
-                    
-                    psnr_list.append(psnr)
-                    ssim_list.append(ssim_score)
-                    
-                    
-                    #send wandb
-                    output = np.concatenate([low_img, gt_img, res_Imgs], axis=1)*255
-                    image = wandb.Image(output, caption="Low image, High Image, Enhanced Image")
-                    #wout.append(image)
-                    if len(wout) <= 5:
-                        wout.append(image)
-
-                    # show result
-                    # output = np.concatenate([low_img, gt_img, res_Imgs, res_trick], axis=1) / 255
-                    # plt.axis('off')
-                    # plt.imshow(output)
-                    # plt.show()
-                    save_path = save_concate + name
-                    cv2.imwrite(save_path, output)
-
-                    save_path =save_dir + name
-                    cv2.imwrite(save_path, res_Imgs*255)
-                 
-    #Metrics
-    #UIQM e UCIQE
-    print("Calculationg Metrics\n")
-    a = list_images(save_dir)
-    print(f"calculando {len(a)} amostras")
+            brightness_level = gt_image.mean([1, 2, 3])  # b*1
+            time_start = time.time()
+            sampledImgs = sampler(lowlight_image, data_concate, brightness_level, ddim=True,
+                                 unconditional_guidance_scale=1, ddim_step=config.ddim_step)
+            time_end = time.time()
+            
+            # Processar imagens
+            sampledImgs = (sampledImgs+1)/2
+            gt_image = (gt_image+1)/2
+            lowlight_image = (lowlight_image+1)/2
+            res_Imgs = np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0), 0, 1)[:,:,::-1] 
+            gt_img = np.clip(gt_image.detach().cpu().numpy()[0].transpose(1, 2, 0), 0, 1)[:,:,::-1]
+            low_img = np.clip(lowlight_image.detach().cpu().numpy()[0].transpose(1, 2, 0), 0, 1)[:,:,::-1]
+            
+            # Compute METRICS
+            psnr = PSNR(res_Imgs, gt_img)
+            res_gray = rgb2gray(res_Imgs)
+            gt_gray = rgb2gray(gt_img)
+            ssim_score = SSIM(res_gray, gt_gray, multichannel=True, data_range=1)
+            
+            psnr_list.append(psnr)
+            ssim_list.append(ssim_score)
+            
+            # Salvar imagens
+            output = np.concatenate([low_img, gt_img, res_Imgs], axis=1)*255
+            save_path_concat = save_concate + name
+            cv2.imwrite(save_path_concat, output)
+            
+            save_path = save_dir + name
+            cv2.imwrite(save_path, res_Imgs*255)
+            
+            # Wandb logging
+            if config.wandb and len(wout) <= 5:
+                image = wandb.Image(output, caption=f"{name}: Low, High, Enhanced")
+                wout.append(image)
+            
+            # Salvar resultados para cálculo posterior de UIQM e UCIQE
+            results.append({
+                'path': save_path,
+                'name': name
+            })
     
-    for path in a:
-        res_Imgs = cv2.imread(path)
-        uiqm,_= nmetrics(res_Imgs)
-        uciqe_ = uciqe(nargin=1,loc=res_Imgs)
-        print(f"uiqm: {uiqm}, uciqe: {uciqe_}")
+    # Calcular UIQM e UCIQE em uma única barra de progresso
+    print("Calculating advanced metrics...")
+    for item in tqdm(results, desc="Processing metrics"):
+        res_Imgs = cv2.imread(item['path'])
+        uiqm, _, _ = nmetrics(res_Imgs)
+        uciqe_ = uciqe(nargin=1, loc=res_Imgs)
         uiqm_list.append(uiqm)
         uciqe_list.append(uciqe_)
-    #AVERAGE SSIM PSNR UICM UCIQE
+        
+    # Calcular médias
     avg_psnr = sum(psnr_list) / len(psnr_list)
     avg_ssim = sum(ssim_list) / len(ssim_list)
     avg_uiqm = sum(uiqm_list) / len(uiqm_list)
     avg_uciqe = sum(uciqe_list) / len(uciqe_list)                 
 
+    # Salvar resultados
     f = open(save_txt_name, 'w+')
-              
-    """ f.write('\nuiqm_list :')
-    f.write(str(uiqm_list))
-    f.write('\nuciqe_list :')
-    f.write(str(uciqe_list))
-    f.write('\nuism_list :') """
-
     f.write('\npsnr_orgin_avg:')
     f.write(str(avg_psnr))
     f.write('\nssim_orgin_avg:')
@@ -523,24 +497,26 @@ def Test(config: Dict,epoch):
     f.write(str(avg_uiqm))
     f.write('\nuciqe_orgin_avg:')
     f.write(str(avg_uciqe))
-
     f.close()
 
+    # Mostrar resultados finais
+    print(f"Métricas finais:")
+    print(f"  PSNR: {avg_psnr:.4f}")
+    print(f"  SSIM: {avg_ssim:.4f}")
+    print(f"  UIQM: {avg_uiqm:.4f}")
+    print(f"  UCIQE: {avg_uciqe:.4f}")
     
     # Wandb logs 
-    wandb.log({"Test "+config.dataset:{
-                     "Average PSNR": avg_psnr,
-                     "Average SSIM": avg_ssim,
-                     "Average UIQM": avg_uiqm,
-                     "Average UCIQE": avg_uciqe,
-                     "Test from epoch": epoch,
-                     "Image ":wout
-                     }})
-    print(f"""
-            Test From epoch {epoch} DONE 
-            """)
-                #return avg_psnr,avg_ssim
-    #plot_images(wout)
+    if config.wandb:
+        wandb.log({"Test "+config.dataset:{
+                 "Average PSNR": avg_psnr,
+                 "Average SSIM": avg_ssim,
+                 "Average UIQM": avg_uiqm,
+                 "Average UCIQE": avg_uciqe,
+                 "Test from epoch": epoch,
+                 "Image ": wout
+                 }})
+    print(f"Test from epoch {epoch} completed successfully!")
 
 def Inference(config: Dict,epoch):
 
@@ -610,89 +586,3 @@ def Inference(config: Dict,epoch):
                         
                     #     #time_start = time.time()
                     #     sampledImgs = sampler(lowlight_image, data_concate,brightness_level,ddim=True,
-                    #                         unconditional_guidance_scale=1,ddim_step=config.ddim_step)
-                    #     #time_end=time.time()
-                    #     #print('time cost:', time_end - time_start)
-
-                    sampledImgs=(sampledImgs+1)/2
-                    gt_image=(gt_image+1)/2
-                    lowlight_image=(lowlight_image+1)/2
-                    res_Imgs=np.clip(sampledImgs.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1] 
-                    #gt_img=np.clip(gt_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
-                    #low_img=np.clip(lowlight_image.detach().cpu().numpy()[0].transpose(1, 2, 0),0,1)[:,:,::-1]
-                    
-
-                    #wandb.log({"Image Inference": [wandb.Image(res_Imgs, caption="Image")]}) ### concertar esse negocio
-                    #save_path =save_dir+ config.data_name+'_level'+str(i)+'.png'
-                    save_path =save_dir+ name +'_.png'
-                    print("Image saved in: ",save_path)
-                    cv2.imwrite(save_path, res_Imgs*255)
-                
-                #Metrics
-
-                # # Wandb logs 
-                # wandb.log({"Inferecia "+config.dataset:{
-                #     "Test from epoch": epoch,
-                #     "Image Ajuste ":wout
-                #     }})
-
-                
-
-                
-
-
-
-if __name__== "__main__" :
-    parser = argparse.ArgumentParser()
-    modelConfig = {
-  
-        "DDP": False,
-        "state": "eval", # or eval
-        "epoch": 601,#10001,
-        "batch_size":16 ,
-        "T": 1000,
-        "channel": 128,
-        "channel_mult": [1, 2, 3, 4],
-        "attn": [2],
-        "num_res_blocks": 2,
-        "dropout": 0.15,
-        "lr": 5e-5,
-        "multiplier": 2.,
-        "beta_1": 1e-4,
-        "beta_T": 0.02,
-        "img_size": 32,
-        "grad_clip": 1.,
-        "device": "cuda", #MODIFIQUEI
-        "device_list": [0],
-        #"device_list": [3,2,1,0],
-        
-        "ddim":True,
-        "unconditional_guidance_scale":1,
-        "ddim_step":100
-    }
-
-
-    parser.add_argument('--dataset_path', type=str, default="./data/UDWdata/")
-    parser.add_argument('--dataset', type=str, default="all") # RUIE, UIEB, SUIM
-    parser.add_argument('--state', type=str, default="train")  #or eval
-    parser.add_argument('--pretrained_path', type=str, default=None)  #or eval ajustar pastas para salvar os conteudos
-    parser.add_argument('--output_path', type=str, default="./output/")  #or eval
-
-    config = parser.parse_args()
-    
-    # wandb.init(
-    #         project="CLEDiffusion",
-    #         config=vars(config),
-    #         name="Treino Diffusao sem mascaras",
-    #         tags=["Train","No mask"],
-    #         group="diffusion_train",
-    #         job_type="train",
-
-        # )
-    
-    for key, value in modelConfig.items():
-        setattr(config, key, value)
-    print(config)
-    Test(config,1000)
-    # wandb.finish()
-    #Test_for_one(modelConfig,epoch=14000)

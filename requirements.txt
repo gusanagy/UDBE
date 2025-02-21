@@ -1,13 +1,14 @@
 lpips
-PIL
+pillow 
 torch
 torchvision
 albumentations
 tensorboardX
 tensorboard
-skimage
+scikit-image 
 glob
 matplotlib
 kornia
 numpy
 opencv-python
+gdown
