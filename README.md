@@ -37,9 +37,9 @@ Activities in underwater environments are paramount in several scenarios, which 
 
 ## Dataset
 
-Este dataset é organizado para facilitar o treinamento e a validação de modelos de aprendizado de máquina. As imagens estão divididas em conjuntos de treino (`train`) e validação (`val`) para cada categoria específica. Certifique-se de utilizar as imagens dos diretórios correspondentes conforme necessário para seus experimentos.
+Link to the dataset used UWDdata: [UWDdata](https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing)
 
-link para o dataset utilizado UWDdata. Crie a pasta data, extraia o dataset. Mova a pasta UWData para o diretorio data. Teste o codigo com o dataset utilizando a flag dataset para selecionar o desejado ou utilizando todos nao setando esse parametro. Descompacte e carregue os checkpoints atraves dos parametros do script. 
+Create a folder named `data` and extract the dataset into it. Move the `UWData` folder to the `data` directory. Test the code with the dataset by using the `--dataset` flag to select the desired dataset, or process all datasets by leaving this parameter unset. Unzip and load the checkpoints using the script's parameters.
 
 * [UWData Download](https://drive.google.com/file/d/1SCwOosZam8bzoZdVSwW60l-bD7c65pv0/view?usp=sharing)
 
@@ -66,7 +66,7 @@ for conda envoiriments
 
 ## Usage
 <!--Our diffusion code structure is based on the original implementation of DDPM. Increasing the size of the U-Net may lead to better results. About training iteration. The training with 5000 iterations has converged quite well. We recommend training for 10,000 iterations to achieve better performance, and you can select the best-performing training iterations.We test code on one RTX 3090 GPU. The training time is about 1-2 days.*/ -->
- Nosso codigo foi treinado em um computador com duas placas NVIDIA TITAN X com 24gb de gpu no total.  
+Our code was trained on a computer with two NVIDIA TITAN X GPUs, totaling 24GB of GPU memory.
 
 ```
 python #train from scratch, you can change setting in modelConfig 
@@ -97,3 +97,5 @@ python test_mask.py --pretrained_path ckpt/Mask_CLE.pt --input_path data/Mask_CL
 ```
 */ -->
 
+# ACKNOWLEDGMENT
+This study was funded, in part, by the São Paulo Research Foundation (FAPESP), Brazil, under Process Number 2024/10523-5. The authors would also like to thank the PRH-ANP and CNPQ organizations for their research support and financial assistance.

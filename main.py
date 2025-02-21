@@ -11,7 +11,7 @@ if __name__== "__main__" :
     modelConfig = {
   
         "DDP": False,
-        "state": "inference", # or eval
+        #"state": "inference", # or eval
         "epoch": 1000,
         "batch_size":16,
         "T": 1000,
@@ -38,10 +38,10 @@ if __name__== "__main__" :
     ##Adicionar ao arg parse o transfer learning manual para o mask diffusions
     parser.add_argument('--dataset', type=str, default="all")
     parser.add_argument('--model', type=str, default="standart")#mask is the second option
-    parser.add_argument('--dataset_path', type=str, default="./data/UDWdata/")
+    parser.add_argument('--dataset_path', type=str, default="./dataset/UDWdata/")
     parser.add_argument('--state', type=str, default="train")  #or eval
     parser.add_argument('--pretrained_path', type=str, default=None)  #or eval
-    parser.add_argument('--inference_image', type=str, default="data/UDWdata/UIEB/val/206_img_.png")  #or eval
+    parser.add_argument('--inference_image', type=str, default="data/UDWdata/UIEB/val/205_img_.png")  #or eval
     parser.add_argument('--output_path', type=str, default="./output/")  #or eval
     parser.add_argument('--wandb', type=bool, default=False)  #or False
     parser.add_argument('--wandb_name', type=str, default="GLDiffusion")
@@ -68,7 +68,7 @@ if __name__== "__main__" :
 
     print(config.epoch)
 
-    if config.state == 'eval':
+    if config.state == 'val':
         Test(config, config.epoch)
     elif config.state == 'train':
         train(config)
