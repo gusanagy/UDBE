@@ -35,14 +35,21 @@ Activities in underwater environments are paramount in several scenarios, which 
 ``` 
 
 ## Setup
-```Let's first create the environment with what Conda has available:
--conda create --name BRDM pillow scikit-image matplotlib numpy tensorboardX tensorboard
+Let's first create the environment with what Conda has available:
+```
+conda create --name BRDM pillow scikit-image matplotlib numpy tensorboardX tensorboard
+```
 Activate the Environment
--conda activate BRDM
+```
+conda activate BRDM
+```
 Install PyTorch and TorchVision
--conda install pytorch torchvision -c pytorch
+```
+conda install pytorch torchvision -c pytorch
+```
 Install Remaining Packages with pip
--pip install lpips albumentations kornia gdown opencv-python wandb
+```
+pip install lpips albumentations kornia gdown opencv-python wandb
 
 ```
 
@@ -55,8 +62,8 @@ python #train from scratch, you can change setting in modelConfig
 python main.py --dataset_path "" --dataset "UIEB" -- state "train" 
 python main.py --dataset_path "" --dataset "SUIM" -- state "train" 
 
-python main.py --pretrained_path  --dataset "SUIM" -- state "eval" --pretrained_path "1000.pt"
-python main.py --pretrained_path  --dataset "UIEB" -- state "eval" --pretrained_path "1000.pt"
+python main.py --pretrained_path  --dataset "SUIM" -- state "val" --pretrained_path "1000.pt"
+python main.py --pretrained_path  --dataset "UIEB" -- state "val" --pretrained_path "1000.pt"
 
 python main.py --pretrained_path  --dataset "SUIM" -- state "inference" --inference_image " "  --pretrained_path "1000.pt"
 python main.py --pretrained_path  --dataset "UIEB" -- state "inference" --inference_image " " --pretrained_path "1000.pt"
