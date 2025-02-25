@@ -1,4 +1,4 @@
-# **BRDM: Brightness Restoration in Underwater Images from Diffusion Models**
+# **UDBE: Unsupervised Diffusion-based Brightness Enhancement in Underwater Images**
 <!--
 Adicionar o link do lattes em todos 
 -->
@@ -35,23 +35,21 @@ Activities in underwater environments are paramount in several scenarios, which 
 ``` 
 
 ## Setup
-Let's first create the environment with what Conda has available:
-```
-conda create --name BRDM pillow scikit-image matplotlib numpy tensorboardX tensorboard
-```
-Activate the Environment
-```
-conda activate BRDM
-```
-Install PyTorch and TorchVision
-```
-conda install pytorch torchvision -c pytorch
-```
-Install Remaining Packages with pip
-```
-pip install lpips albumentations kornia gdown opencv-python wandb
 
-```
+'''
+git clone https://github.com/gusanagy/UDBE.git   
+'''
+
+'''
+cd UDBE
+'''
+
+'''
+conda env create -f UDBE.yaml --name UDBE
+conda activate UDBE
+'''
+
+
 
 ## Usage
 <!--Our diffusion code structure is based on the original implementation of DDPM. Increasing the size of the U-Net may lead to better results. About training iteration. The training with 5000 iterations has converged quite well. We recommend training for 10,000 iterations to achieve better performance, and you can select the best-performing training iterations.We test code on one RTX 3090 GPU. The training time is about 1-2 days.*/ -->
@@ -85,6 +83,18 @@ python train_mask.py --pretrained_path ckpt/lol.pt  #finetune Mask CLE Diffusion
 python test_mask.py --pretrained_path ckpt/Mask_CLE.pt --input_path data/Mask_CLE_cases/opera.png --mask_path data/Mask_CLE_cases/opera_mask.png --data_name opera
 ```
 */ -->
+
+Paper: https://arxiv.org/abs/2501.16211
+For quotes:
+
+'''
+@article{schein2025udbe,
+  title={UDBE: Unsupervised Diffusion-based Brightness Enhancement in Underwater Images},
+  author={Schein, Tatiana Ta{\'\i}s and de Almeira, Gustavo Pereira and Bri{\~a}o, Stephanie Loi and de Bem, Rodrigo Andrade and de Oliveira, Felipe Gomes and Drews-Jr, Paulo LJ},
+  journal={arXiv preprint arXiv:2501.16211},
+  year={2025}
+}
+'''
 
 # ACKNOWLEDGMENT
 This study was funded, in part, by the São Paulo Research Foundation (FAPESP), Brazil, under Process Number 2024/10523-5. The authors would also like to thank the PRH-ANP and CNPQ organizations for their research support and financial assistance.
